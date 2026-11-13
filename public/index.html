@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stufftime — Журнал</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Rubik:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
+<script>
+/* применяем сохранённую тему до первой отрисовки — чтобы интерфейс не «мигал» при загрузке */
+(function(){try{var t=localStorage.getItem('stufftime_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="paper-grid" aria-hidden="true"></div>
+
+<div id="loginView">
+  <div class="login-card">
+    <div class="login-top">
+      <img class="login-logo" src="logo.png" alt="Логотип Stufftime">
+      <div class="login-top-text">
+        <div class="login-brand">STUFFTIME · ЖУРНАЛ</div>
+        <label class="theme-label">Тема: <select class="theme-sel" title="Тема интерфейса: светлая / серая / тёмная">
+          <option value="light">светлая</option>
+          <option value="gray">серая</option>
+          <option value="dark">тёмная</option>
+        </select></label>
+      </div>
+    </div>
+    <h1 class="login-title">Вход в журнал</h1>
+    <p class="login-sub">Выберите логин — сотрудника из справочника — и введите свой пароль. Если пароль ещё не задан — установите его при первом входе</p>
+    <div class="login-emprow">
+      <select id="loginEmp" title="Логин (сотрудник из справочника)">
+        <option value="">— выберите сотрудника —</option>
+      </select>
+      <img id="loginAvatar" class="login-avatar" alt="" hidden>
+    </div>
+    <input id="loginPass" type="password" placeholder="Пароль" autocomplete="current-password" maxlength="64">
+    <button class="btn btn-add" id="loginBtn" type="button">Войти →</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-net" id="loginNet">подключение к серверу…</div>
+    <div class="login-credit">Разработка студии «Мусорные Дела»</div>
+  </div>
+</div>
+
+<div id="appView" hidden>
+<header class="cover">
+  <div class="cover-inner">
+    <div class="cover-left">
+      <img class="logo" src="logo.png" alt="Логотип Stufftime">
+      <div class="cover-text">
+        <div class="cover-kicker">производственный журнал · рег. № 001</div>
+        <h1>ЖУРНАЛ</h1>
+        <div class="cover-sub">Stufftime · задачи сотрудников по датам и часам</div>
+      </div>
+    </div>
+    <div class="stamp" title="система в работе">
+      <span class="stamp-line">СТУФТТАЙМ</span>
+      <span class="stamp-line stamp-big">ПРИНЯТО К УЧЁТУ</span>
+      <span class="stamp-line" id="stampDate">—</span>
+    </div>
+    <div class="cover-right">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-date" id="clockDate">—</div>
+      <div class="chip" role="status"><span class="dot" id="netDot"></span><span id="netText">подключение…</span></div>
+      <div class="userbar"><img id="meAvatar" class="me-avatar" alt="" hidden><span class="me">вход: <b id="meName">—</b></span><button class="btn-logout" id="logoutBtn" type="button">Выйти</button></div>
+      <label class="theme-label">Тема: <select id="themeSel" class="theme-sel" title="Тема интерфейса: светлая / серая / тёмная">
+        <option value="light">светлая</option>
+        <option value="gray">серая</option>
+        <option value="dark">тёмная</option>
+      </select></label>
+    </div>
+  </div>
+</header>
+
+<div id="offline">⚠ Нет соединения с сервером. Убедитесь, что <b>node server.js</b> запущен в папке stufftime и порт <b>8080</b> свободен — статус проверяется автоматически.</div>
+
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar" hidden aria-label="Разделы (администратор)">
+    <div class="sidebar-brand">STUFFTIME</div>
+    <button class="side-btn active" type="button" data-page="tasks"><span class="side-ico" aria-hidden="true">🗒</span><span>Задачи</span></button>
+    <button class="side-btn" type="button" data-page="employees"><span class="side-ico" aria-hidden="true">👥</span><span>Сотрудники</span></button>
+    <button class="side-btn" type="button" data-page="projects"><span class="side-ico" aria-hidden="true">📁</span><span>Проекты</span></button>
+    <div class="sidebar-foot">
+      <span class="sb-user"><img id="sbAvatar" class="me-avatar" alt="" hidden><b id="sbName">—</b></span>
+      <span class="sb-role" id="sbRole">—</span>
+    </div>
+  </nav>
+
+  <main>
+    <section id="pageTasks" class="page">
+      <section class="stamps" id="stamps" aria-label="Сводка"></section>
+
+      <section class="panel" aria-label="Задачи">
+        <div class="panel-head">
+          <h2>Задачи</h2>
+          <div class="filters">
+            <input id="fText" placeholder="поиск: задача, комментарий…" autocomplete="off">
+            <select id="fEmp" title="Фильтр по сотруднику"><option value="">все сотрудники</option></select>
+            <label class="onlymine" title="Показывать только записи текущего пользователя"><input type="checkbox" id="fMine"> только мои</label>
+          </div>
+        </div>
+        <div class="week-nav" role="group" aria-label="Навигация по неделям">
+          <button class="week-btn" id="weekPrevBtn" type="button" title="Предыдущая неделя (понедельник — воскресенье)">← Назад</button>
+          <span class="week-range" id="weekRange" aria-live="polite">—</span>
+          <button class="week-btn" id="weekNextBtn" type="button" title="Следующая неделя (на будущие недели переход недоступен)">Вперёд →</button>
+        </div>
+        <div class="table-wrap">
+          <table class="ledger">
+            <thead>
+              <tr>
+                <th class="w-date">Дата</th>
+                <th class="w-emp">Сотрудник</th>
+                <th class="w-task">Задача</th>
+                <th class="w-hours">Часы</th>
+                <th class="w-com">Комментарий</th>
+                <th class="w-ops"></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="ledger-foot">
+          <span id="rowsInfo"></span>
+          <button class="btn btn-add" id="addBtn">+ Добавить строку</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="pageEmployees" class="page" hidden>
+      <section class="panel emp-page" aria-label="Справочник сотрудников">
+        <h2>Справочник сотрудников</h2>
+        <form id="empForm" autocomplete="off">
+          <input id="eName" placeholder="Фамилия Имя" maxlength="60" required>
+          <input id="eRole" placeholder="Должность" maxlength="40">
+          <select id="eAccess" title="Роль доступа">
+            <option value="executor">исполнитель — видит только свои записи</option>
+            <option value="admin">администратор — видит всё и управляет справочником</option>
+          </select>
+          <div class="avatar-row" title="Аватар — готовая картинка из папки public/avatars">
+            <select id="eAvatar" title="Аватар (выберите из готового списка)">
+              <option value="">без аватара (инициалы)</option>
+            </select>
+            <img id="eAvatarPrev" class="avatar-prev" alt="" hidden>
+          </div>
+          <div class="row2">
+            <input id="ePass" type="password" placeholder="Пароль (не менее 4 символов)" maxlength="64" autocomplete="new-password">
+            <button class="btn btn-add" type="submit" style="white-space:nowrap">Внести</button>
+          </div>
+        </form>
+        <ul class="emp-list" id="empList"></ul>
+      </section>
+    </section>
+
+    <section id="pageProjects" class="page" hidden>
+      <section class="panel" aria-label="Справочник проектов">
+        <div class="panel-head">
+          <h2>Проекты</h2>
+          <span class="panel-note">справочник задач для журнала · номер присваивается автоматически (первый свободный) · наименование — уникальное для таблицы</span>
+        </div>
+        <div class="table-wrap">
+          <table class="ledger projects-tbl">
+            <thead>
+              <tr>
+                <th class="w-num">Номер</th>
+                <th class="w-name">Наименование</th>
+                <th class="w-com">Комментарий</th>
+                <th class="w-ops"></th>
+              </tr>
+            </thead>
+            <tbody id="projRows"></tbody>
+          </table>
+        </div>
+        <div class="ledger-foot">
+          <span id="projInfo"></span>
+          <button class="btn btn-add" id="projAddBtn" type="button">+ Добавить проект</button>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      <div><b>Архитектура.</b> Браузер (HTML + JS, fetch) общается с сервером по REST API; данные — на сервере: журнал и сессии в <code>data/stufftime.json</code>, справочник сотрудников — в <code>data/employees.json</code>, проекты — в <code>data/projects.json</code>, готовые аватарки — в <code>public/avatars</code>. Один сервер — сколько угодно клиентов: откройте <code>http://&lt;IP-сервера&gt;:8080</code> с любой машины в сети. Записи хранят «фотографию» имени сотрудника, поэтому история не теряется даже при удалении человека из справочника.</div>
+      <ul class="api-ref">
+        <li><span class="m get">GET</span> /api/employees — справочник сотрудников</li>
+        <li><span class="m get">GET</span> /api/avatars — готовые аватарки (public/avatars)</li>
+        <li><span class="m post">POST</span> /api/employees — внести сотрудника</li>
+        <li><span class="m put">PUT</span> /api/employees/:id — отредактировать</li>
+        <li><span class="m del">DEL</span> /api/employees/:id — удалить</li>
+        <li><span class="m get">GET</span> /api/projects — проекты (список — всем; управление — администратор)</li>
+        <li><span class="m post">POST</span> /api/projects — новый проект</li>
+        <li><span class="m put">PUT</span> /api/projects/:id — отредактировать проект</li>
+        <li><span class="m del">DEL</span> /api/projects/:id — удалить проект</li>
+        <li><span class="m get">GET</span> /api/entries — записи журнала</li>
+        <li><span class="m post">POST</span> /api/entries — новая запись</li>
+        <li><span class="m put">PUT</span> /api/entries/:id — корректировка</li>
+        <li><span class="m del">DEL</span> /api/entries/:id — удалить запись</li>
+        <li><span class="m get">GET</span> /api/stats — сводка · /api/health — статус</li>
+      </ul>
+      <div class="credit">Разработка студии «Мусорные Дела»</div>
+    </footer>
+  </main>
+</div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* сессия: токен держим в sessionStorage (исчезает при закрытии вкладки) */
+const TOKEN_KEY = 'stufftime_token';
+const getToken = () => { try { return sessionStorage.getItem(TOKEN_KEY); } catch { return null; } };
+const setToken = t => { try { t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); } catch {} };
+
+const AV = ['#2e5c44','#8a5a00','#5b3a8e','#a03a2c','#1d5b8e','#7a3b5e'];
+const colorFor = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AV[h % AV.length]; };
+const dateColor = d => { let h = 0; for (const c of String(d)) h = (h * 33 + c.charCodeAt(0)) >>> 0; return h % 6; };
+const initials = n => String(n).trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join('') || '?';
+const fmtDate = d => { const [a,b,c] = String(d).split('-'); return `${c}.${b}.${a}`; };
+const fmtH = x => String(Math.round(x * 100) / 100).replace('.', ',');
+const isoLocalDate = d => { const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const todayISO = () => isoLocalDate(new Date());
+
+async function api(path, opts = {}) {
+  let res;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    const t = getToken();
+    if (t) headers.Authorization = 'Bearer ' + t;
+    res = await fetch(path, {
+      method: opts.method || 'GET',
+      headers,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+  } catch { throw new Error('Нет соединения с сервером'); }
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    if (res.status === 401 && path !== '/api/login') {
+      setToken(null); me = null; weekOffset = 0; showLogin();
+      throw new Error(data.error || 'Сессия истекла — войдите снова');
+    }
+    throw new Error(data.error || `Ошибка сервера: ${res.status}`);
+  }
+  return data;
+}
+
+let employees = [], entries = [], stats = null, projects = [];
+let me = null;                 // текущий пользователь (после входа)
+const isAdmin = () => !!(me && me.accessRole === 'admin');
+let draft = null;          // новая строка, ещё не сохранённая
+let editingId = null;      // id записи, которую правят
+let empEditingId = null;   // id сотрудника, которого правят
+let projDraft = null;      // новая строка проекта, ещё не сохранённая
+let projDraftNum = null;   // превью номера для новой строки (финальный номер присваивает сервер)
+let projEditingId = null;  // id проекта, который правят
+let taskDrop = null;       // открытый выпадающий список задач (выбор из справочника «Проекты»)
+const filters = { q: '', emp: '', mine: false };
+let weekOffset = 0; // 0 — текущая неделя; −1, −2, … — прошедшие (будущие недели не открываются)
+
+/* ---------- рендер журнала ---------- */
+function empOptions(selectedId) {
+  return employees.map(e => `<option value="${e.id}" ${e.id === selectedId ? 'selected' : ''}>${esc(e.name)}</option>`).join('');
+}
+
+/* справочник проектов: номер (авто, первый свободный), наименование (уникальное), комментарий */
+function nextProjNum(list) {
+  const used = new Set(list.map(x => Number(x.num)).filter(n => Number.isInteger(n) && n > 0));
+  let n = 1;
+  while (used.has(n)) n += 1;
+  return n;
+}
+function projectByName(name) {
+  const n = String(name || '').trim().toLowerCase();
+  return projects.find(x => String(x.name || '').trim().toLowerCase() === n) || null;
+}
+function projRowHTML(p, editable) {
+  if (editable) {
+    return `<tr class="row editing" data-id="${p.id || 'new'}">
+      <td class="c-num"><span class="num-badge">${Number(p.num) || '·'}</span></td>
+      <td><input type="text" data-pf="name" value="${esc(p.name)}" placeholder="основное название проекта" maxlength="80"></td>
+      <td><input type="text" data-pf="comment" value="${esc(p.comment)}" placeholder="дополнительная информация (необязательно)" maxlength="300"></td>
+      <td class="ops">
+        <button class="op op-save" data-pop="save" title="Сохранить проект">✓</button>
+        ${p.id ? `<button class="op" data-pop="cancel" title="Отменить правки">↩</button>`
+               : `<button class="op op-del" data-pop="discard" title="Сбросить строку">✕</button>`}
+      </td>
+    </tr>`;
+  }
+  return `<tr class="row" data-id="${p.id}">
+    <td class="c-num"><span class="num-badge">${Number(p.num) || '·'}</span></td>
+    <td class="p-name">${esc(p.name)}</td>
+    <td class="com">${esc(p.comment) || '—'}</td>
+    <td class="ops">
+      <button class="op" data-pop="edit" data-id="${p.id}" title="Редактировать">✎</button>
+      <button class="op op-del" data-pop="del" data-id="${p.id}" title="Удалить">✕</button>
+    </td>
+  </tr>`;
+}
+function renderProjects() {
+  /* сервер хранит комментарий как description — приводим к единому полю */
+  const list = [...projects].map(p => ({ ...p, comment: p.description || '' })).sort((a, b) =>
+    (Number(a.num) || 0) - (Number(b.num) || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+  let html = '';
+  if (projDraft) html += projRowHTML({ name: projDraft.name, comment: projDraft.comment, num: projDraftNum }, true);
+  for (const p of list) html += projRowHTML(p, projEditingId === p.id);
+  $('#projRows').innerHTML = html ||
+    `<tr><td colspan="4"><div class="empty">Справочник «Проекты» пуст — нажмите «+ Добавить проект». Из этого справочника выбирается задача в журнале.</div></td></tr>`;
+  $('#projInfo').textContent = `проектов: ${list.length}${projDraft ? ' + новая строка' : ''} · номер присваивается автоматически (первый свободный)`;
+}
+
+function rowHTML(v, editable) {
+  if (editable) {
+    return `<tr class="row editing d${dateColor(v.date)}" data-id="${v.id || 'new'}">
+      <td><input type="date" data-f="date" value="${esc(v.date)}"></td>
+      <td><select data-f="employeeId" ${isAdmin() ? '' : 'disabled'} title="${isAdmin() ? '' : 'исполнитель вносит запись только за себя'}">${empOptions(v.employeeId)}</select></td>
+      <td>
+        <div class="task-picker">
+          <input type="text" data-f="task" value="${esc(v.task)}" placeholder="выберите проект из справочника…" autocomplete="off" maxlength="300"
+                 title="Задача выбирается только из справочника «Проекты» — начните вводить для поиска">
+          <button type="button" class="task-caret" tabindex="-1" aria-label="выбрать проект из справочника «Проекты»">▾</button>
+          <div class="task-drop" hidden>
+            <div class="task-drop-head">Справочник «Проекты»</div>
+            <div class="task-drop-list"></div>
+          </div>
+        </div>
+      </td>
+      <td><input type="number" data-f="hours" value="${esc(v.hours)}" min="0.25" step="0.25" max="24"></td>
+      <td><input type="text" data-f="comment" value="${esc(v.comment)}" placeholder="необязательно" maxlength="300"></td>
+      <td class="ops">
+        <button class="op op-save" data-op="save" title="Сохранить запись">✓</button>
+        ${v.id ? `<button class="op" data-op="cancel" title="Отменить правки">↩</button>`
+               : `<button class="op op-del" data-op="discard" title="Сбросить строку">✕</button>`}
+      </td>
+    </tr>`;
+  }
+  const role = (employees.find(e => e.id === v.employeeId) || {}).role || '';
+  return `<tr class="row d${dateColor(v.date)}" data-id="${v.id}">
+    <td class="c-date">${fmtDate(v.date)}</td>
+    <td>${esc(v.employeeName)}${role ? `<span class="emp-role-tag">${esc(role)}</span>` : ''}</td>
+    <td>${esc(v.task)}</td>
+    <td><span class="hours">${fmtH(v.hours)} ч</span></td>
+    <td class="com">${esc(v.comment) || '—'}</td>
+    <td class="ops">
+      <button class="op" data-op="edit" data-id="${v.id}" title="Исправить">✎</button>
+      <button class="op op-del" data-op="del" data-id="${v.id}" title="Удалить">✕</button>
+    </td>
+  </tr>`;
+}
+
+/* ---------- навигация по неделям: неделя = понедельник — воскресенье ----------
+   weekOffset: 0 — текущая неделя; −1, −2, … — прошедшие недели.
+   На будущие недели переходить нельзя: на текущей неделе кнопка «Вперёд» неактивна. */
+function weekBounds(offset) {
+  const now = new Date();
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + offset * 7); /* понедельник недели */
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  return { from: isoLocalDate(mon), to: isoLocalDate(sun) };
+}
+function renderWeekNav() {
+  const { from, to } = weekBounds(weekOffset);
+  $('#weekRange').textContent = `${fmtDate(from)} — ${fmtDate(to)}${weekOffset === 0 ? ' · текущая' : ''}`;
+  $('#weekNextBtn').disabled = weekOffset >= 0;
+}
+
+function renderRows() {
+  closeTaskDrop();
+  renderWeekNav();
+  const q = filters.q.toLowerCase();
+  const wb = weekBounds(weekOffset);
+  /* записи выбранной недели (даты в формате ГГГГ-ММ-ДД — работает строчное сравнение) */
+  const inWeek = entries.filter(e => e.date >= wb.from && e.date <= wb.to);
+  const list = inWeek.filter(e => {
+    if (filters.mine && me && e.employeeId !== me.id) return false;
+    if (filters.emp && e.employeeId !== filters.emp) return false;
+    if (q && !(e.task + ' ' + e.employeeName + ' ' + (e.comment || '')).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  let html = '';
+  if (draft) html += rowHTML(draft, true);
+  for (const e of list) html += rowHTML(e, editingId === e.id);
+  $('#rows').innerHTML = html ||
+    `<tr><td colspan="6"><div class="empty">${filters.q || filters.emp
+      ? 'По заданному фильтру ничего не найдено.'
+      : `Записей за неделю ${fmtDate(wb.from)} — ${fmtDate(wb.to)} пока нет.`} Нажмите «+ Добавить строку» — новая запись попадёт в журнал.</div></td></tr>`;
+  $('#rowsInfo').textContent = `неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · показано: ${list.length} из ${inWeek.length}${draft ? ' + новая строка' : ''} · одинаковый цвет строк — одна дата · задача выбирается из справочника «Проекты»`;
+}
+
+/* ---------- рендер справочника ---------- */
+function renderEmps() {
+  const ul = $('#empList');
+  if (!employees.length) {
+    ul.innerHTML = '<li class="empty">Справочник пуст — внесите первого сотрудника.</li>';
+  } else {
+    ul.innerHTML = employees.map((e, i) => {
+      const count = entries.filter(x => x.employeeId === e.id).length;
+      if (empEditingId === e.id) {
+        return `<li class="emp editing" data-id="${e.id}" style="animation-delay:${i*40}ms">
+          <input data-ef="name" value="${esc(e.name)}" placeholder="Фамилия Имя" maxlength="60">
+          <input data-ef="role" value="${esc(e.role)}" placeholder="Должность" maxlength="40">
+          <select data-ef="accessRole" title="Роль доступа">
+            <option value="executor" ${e.accessRole !== 'admin' ? 'selected' : ''}>исполнитель</option>
+            <option value="admin" ${e.accessRole === 'admin' ? 'selected' : ''}>администратор</option>
+          </select>
+          <select data-ef="avatar" title="Аватар (из готового списка)">
+            <option value="">без аватара (инициалы)</option>
+            ${avatarList.map(a => `<option value="${esc(a)}" ${a === e.avatar ? 'selected' : ''}>${esc(a)}</option>`).join('')}
+          </select>
+          <input data-ef="password" type="password" value="" placeholder="${e.hasPassword ? 'новый пароль (пусто — не менять)' : 'пароль (не менее 4)'}" maxlength="64" autocomplete="new-password">
+          <span class="ops">
+            <button class="op op-save" data-eop="save" data-id="${e.id}" title="Сохранить">✓</button>
+            <button class="op" data-eop="cancel" data-id="${e.id}" title="Отменить">↩</button>
+          </span>
+        </li>`;
+      }
+      const avHtml = e.avatar
+        ? '<img class="avatar-img" src="avatars/' + encodeURIComponent(e.avatar) + '" alt="">'
+        : '<span class="avatar" style="--av:' + colorFor(e.name) + '">' + initials(e.name) + '</span>';
+      return `<li class="emp" data-id="${e.id}" style="animation-delay:${i*40}ms">
+        ${avHtml}
+        <span class="emp-info"><b>${esc(e.name)}</b><small>${esc(e.role) || 'без должности'} · записей: ${count}</small><small class="pass ${e.hasPassword ? 'on' : 'off'}">${e.hasPassword ? '🔒 пароль задан' : '○ без пароля'}</small><small class="arole ${e.accessRole === 'admin' ? 'arole-admin' : 'arole-exec'}">${e.accessRole === 'admin' ? '★ администратор' : 'исполнитель'}</small></span>
+        <span class="ops">
+          <button class="op" data-eop="edit" data-id="${e.id}" title="Редактировать">✎</button>
+          <button class="op op-del" data-eop="del" data-id="${e.id}" title="Удалить">✕</button>
+        </span>
+      </li>`;
+    }).join('');
+  }
+  const sel = $('#fEmp'); const cur = sel.value;
+  sel.innerHTML = '<option value="">все сотрудники</option>' +
+    employees.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if (employees.some(e => e.id === cur)) sel.value = cur;
+}
+
+/* ---------- готовые аватарки (public/avatars) ---------- */
+let avatarList = [];
+async function loadAvatars() {
+  let list = [];
+  try { const r = await api('/api/avatars'); list = r.avatars || []; } catch { list = []; }
+  avatarList = list;
+  const sel = $('#eAvatar');
+  sel.innerHTML = '<option value="">без аватара (инициалы)</option>' +
+    list.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  setAvatarPrev(sel);
+}
+function setAvatarPrev(selEl) {
+  const img = $('#eAvatarPrev');
+  const v = selEl.value;
+  if (v) { img.src = 'avatars/' + encodeURIComponent(v); img.hidden = false; }
+  else { img.removeAttribute('src'); img.hidden = true; }
+}
+$('#eAvatar').addEventListener('change', e => setAvatarPrev(e.target));
+
+/* ---------- сводка ---------- */
+function renderStats() {
+  if (!stats) return;
+  $('#stamps').innerHTML = `
+    <div class="stamp-card"><small>записей в журнале</small><b>${stats.entries}</b></div>
+    <div class="stamp-card"><small>часов сегодня</small><b>${fmtH(stats.hoursToday)}</b></div>
+    <div class="stamp-card"><small>часов в этом месяце</small><b>${fmtH(stats.hoursMonth)}</b></div>
+    <div class="stamp-card"><small>сотрудников в справочнике</small><b>${stats.employees}</b></div>`;
+}
+
+function renderAll() { renderRows(); renderEmps(); renderProjects(); renderStats(); }
+
+async function load() {
+  const [e, en, s, pr] = await Promise.all([api('/api/employees'), api('/api/entries'), api('/api/stats'), api('/api/projects')]);
+  employees = e; entries = en.entries; stats = s; projects = pr.projects || [];
+  if (draft && !employees.some(x => x.id === draft.employeeId))
+    draft.employeeId = employees[0] ? employees[0].id : '';
+  renderAll();
+}
+
+/* ---------- события: журнал ---------- */
+$('#addBtn').addEventListener('click', () => {
+  if (!employees.length) { toast('Нет доступного сотрудника для записи', 'err'); return; }
+  if (!projects.length && !draft) toast('Задача выбирается только из справочника «Проекты» — сначала внесите проект', 'err');
+  if (draft) { const t = document.querySelector('.row.editing [data-f=task]'); if (t) t.focus(); return; }
+  /* исполнитель фиксирует работу только за себя; администратор — за кого угодно */
+  const empId = isAdmin() ? employees[0].id : (me ? me.id : employees[0].id);
+  /* дата новой записи: текущая неделя — сегодня, прошедшая — понедельник этой недели */
+  const draftDate = weekOffset === 0 ? todayISO() : weekBounds(weekOffset).from;
+  draft = { id: null, date: draftDate, employeeId: empId, task: '', hours: 8, comment: '' };
+  renderRows();
+  const t = document.querySelector('.row.editing [data-f=task]'); if (t) t.focus();
+});
+
+async function saveRow(tr, btn) {
+  const g = f => tr.querySelector(`[data-f=${f}`);
+  const v = {
+    id: tr.dataset.id && tr.dataset.id !== 'new' ? tr.dataset.id : null,
+    date: g('date').value,
+    employeeId: g('employeeId').value,
+    task: g('task').value.trim(),
+    hours: Number(String(g('hours').value).replace(',', '.')),
+    comment: g('comment').value.trim(),
+  };
+  if (!v.date) return toast('Выберите дату из календаря', 'err');
+  if (!v.employeeId) return toast('Выберите сотрудника из справочника', 'err');
+  if (!v.task) return toast('Выберите задачу из справочника «Проекты»', 'err');
+  if (!projectByName(v.task)) return toast('Задачу можно выбрать только из справочника «Проекты» — ручной ввод отключён', 'err');
+  if (!(v.hours > 0)) return toast('Укажите количество часов (больше нуля)', 'err');
+  if (v.hours > 24) return toast('Не более 24 часов за день', 'err');
+  try {
+    const saved = await api(v.id ? '/api/entries/' + v.id : '/api/entries', { method: v.id ? 'PUT' : 'POST', body: v });
+    const wasEdit = !!v.id;
+    draft = null; editingId = null;
+    await load();
+    const rowEl = document.querySelector(`#rows tr[data-id="${saved.id}"]`);
+    if (rowEl) rowEl.classList.add('flash');
+    toast(wasEdit ? 'Значения исправлены' : 'Запись внесена в журнал', 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+    if (btn) btn.disabled = false;
+  }
+}
+
+$('#rows').addEventListener('click', async ev => {
+  const btn = ev.target.closest('button'); if (!btn) return;
+  const tr = btn.closest('tr'); const op = btn.dataset.op;
+
+  if (op === 'save') { btn.disabled = true; await saveRow(tr, btn); return; }
+  if (op === 'discard') { draft = null; renderRows(); return; }
+  if (op === 'cancel') { editingId = null; renderRows(); return; }
+  if (op === 'edit') {
+    editingId = btn.dataset.id; renderRows();
+    const t = document.querySelector(`#rows tr[data-id="${btn.dataset.id}"] [data-f=task]`);
+    if (t) { t.focus(); t.select(); }
+    return;
+  }
+  if (op === 'del') {
+    const id = btn.dataset.id;
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed'); btn.textContent = 'точно?';
+      btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '✕'; }, 2600);
+      return;
+    }
+    clearTimeout(btn._t);
+    try { await api('/api/entries/' + id, { method: 'DELETE' }); toast('Запись удалена из журнала', 'ok'); await load(); }
+    catch (e) { toast(e.message, 'err'); }
+  }
+});
+
+/* клавиатура: Enter в строке = сохранить; выбор задачи — стрелки, Enter, Esc */
+$('#rows').addEventListener('keydown', ev => {
+  const el = ev.target;
+  if (el.tagName !== 'INPUT') return;
+  if (el.matches('[data-f=task]')) {
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      if (taskDrop && taskDrop.items.length) {
+        ev.preventDefault();
+        const n = taskDrop.items.length;
+        taskDrop.idx = (taskDrop.idx + (ev.key === 'ArrowDown' ? 1 : -1) + n) % n;
+        taskDrop.listEl.querySelectorAll('.task-item').forEach((x, k) => x.classList.toggle('cur', k === taskDrop.idx));
+        const cur = taskDrop.listEl.children[taskDrop.idx];
+        if (cur) cur.scrollIntoView({ block: 'nearest' });
+      }
+      return;
+    }
+    if (ev.key === 'Escape') { closeTaskDrop(); return; }
+    if (ev.key === 'Enter' && taskDrop) {
+      ev.preventDefault();
+      const it = taskDrop.items[taskDrop.idx];
+      if (it) selectTask(taskDrop.input, it.name);
+      else closeTaskDrop();
+      return;
+    }
+  }
+  if (ev.key !== 'Enter') return;
+  const tr = el.closest('tr.editing');
+  if (!tr) return;
+  ev.preventDefault();
+  const b = tr.querySelector('[data-op=save]'); if (b) b.click();
+});
+
+/* ---------- выбор задачи: только из справочника «Проекты», с поиском ---------- */
+function closeTaskDrop() {
+  if (taskDrop) taskDrop.listEl.querySelectorAll('.task-item.cur').forEach(x => x.classList.remove('cur'));
+  document.querySelectorAll('.task-drop').forEach(d => { d.hidden = true; });
+  taskDrop = null;
+}
+function renderTaskDrop(input) {
+  const picker = input.closest('.task-picker');
+  if (!picker) return;
+  const drop = picker.querySelector('.task-drop');
+  const head = drop.querySelector('.task-drop-head');
+  const listEl = drop.querySelector('.task-drop-list');
+  const q = input.value.trim().toLowerCase();
+  const items = [...projects]
+    .sort((a, b) => (Number(a.num) || 0) - (Number(b.num) || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'ru'))
+    .filter(p => !q || String(p.name).toLowerCase().includes(q) || String(p.num).includes(q));
+  head.textContent = q
+    ? `поиск: «${input.value.trim()}» — найдено: ${items.length} из ${projects.length}`
+    : `справочник «Проекты» · проектов: ${projects.length} — начните вводить для поиска`;
+  if (!projects.length) {
+    listEl.innerHTML = '<div class="task-none">В справочнике «Проекты» нет ни одного проекта — проект вносит администратор на странице «Проекты».</div>';
+  } else if (!items.length) {
+    listEl.innerHTML = '<div class="task-none">Ничего не найдено — уточните текст (наименование или номер проекта).</div>';
+  } else {
+    listEl.innerHTML = items.map((p, i) =>
+      `<div class="task-item${i === 0 ? ' cur' : ''}" data-task-name="${esc(p.name)}"><span class="task-num">${Number(p.num) || '·'}</span><span class="task-name">${esc(p.name)}</span></div>`
+    ).join('');
+  }
+  drop.hidden = false;
+  taskDrop = { input, listEl, idx: 0, items };
+}
+function selectTask(input, name) {
+  input.value = name;
+  input.dataset.sel = name;
+  closeTaskDrop();
+}
+
+$('#rows').addEventListener('focusin', ev => {
+  if (ev.target.matches && ev.target.matches('[data-f=task]')) {
+    closeTaskDrop();
+    renderTaskDrop(ev.target);
+  }
+});
+$('#rows').addEventListener('input', ev => {
+  if (ev.target.matches && ev.target.matches('[data-f=task]') && taskDrop) renderTaskDrop(taskDrop.input);
+});
+$('#rows').addEventListener('focusout', ev => {
+  const el = ev.target;
+  if (!(el.matches && el.matches('[data-f=task]'))) return;
+  /* небольшая задержка — вдруг пользователь кликнул по пункту списка */
+  setTimeout(() => {
+    if (!document.body.contains(el)) return;
+    if (taskDrop && taskDrop.input === el) return; /* список ещё открыт (клик по ▾) — не трогаем текст поиска */
+    const val = String(el.value || '').trim();
+    if (val && projectByName(val)) { el.dataset.sel = val; return; }
+    if (!val) { el.dataset.sel = ''; return; }
+    el.value = el.dataset.sel || ''; /* свободный текст не допускается — возвращаем последний выбранный проект */
+  }, 150);
+});
+$('#rows').addEventListener('click', ev => {
+  const item = ev.target.closest('.task-item');
+  if (item) {
+    const input = item.closest('.task-picker').querySelector('[data-f=task]');
+    selectTask(input, item.dataset.taskName);
+    input.focus();
+    return;
+  }
+  const caret = ev.target.closest('.task-caret');
+  if (caret) {
+    ev.preventDefault();
+    const input = caret.closest('.task-picker').querySelector('[data-f=task]');
+    closeTaskDrop();
+    renderTaskDrop(input);
+  }
+});
+document.addEventListener('click', ev => {
+  if (taskDrop && !ev.target.closest('.task-picker')) closeTaskDrop();
+});
+
+/* фильтры */
+$('#fText').addEventListener('input', e => { filters.q = e.target.value.trim(); renderRows(); });
+$('#fEmp').addEventListener('change', e => { filters.emp = e.target.value; renderRows(); });
+
+/* навигация по неделям (кнопки над таблицей) */
+$('#weekPrevBtn').addEventListener('click', () => {
+  weekOffset -= 1;
+  draft = null; editingId = null; /* незавершённая новая строка не «перескакивает» между неделями */
+  renderRows();
+});
+$('#weekNextBtn').addEventListener('click', () => {
+  if (weekOffset >= 0) return; /* на будущую неделю переходить нельзя — кнопка неактивна */
+  weekOffset += 1;
+  draft = null; editingId = null;
+  renderRows();
+});
+
+/* ---------- события: справочник ---------- */
+$('#empForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const name = $('#eName').value.trim(), role = $('#eRole').value.trim(), password = $('#ePass').value;
+  const accessRole = $('#eAccess') ? $('#eAccess').value : 'executor';
+  const avatar = $('#eAvatar') ? $('#eAvatar').value : '';
+  if (!name) return toast('Укажите фамилию и имя', 'err');
+  if (password && password.length < 4) return toast('Пароль должен быть не короче 4 символов', 'err');
+  try {
+    await api('/api/employees', { method: 'POST', body: { name, role, password, accessRole, avatar } });
+    ev.target.reset(); $('#eName').focus();
+    toast(`${name} — внесён(а) в справочник`, 'ok');
+    await load();
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+$('#empList').addEventListener('click', async ev => {
+  const btn = ev.target.closest('button'); if (!btn) return;
+  const op = btn.dataset.eop, id = btn.dataset.id;
+
+  if (op === 'edit') {
+    empEditingId = id; renderEmps();
+    const n = document.querySelector('#empList [data-ef=name]'); if (n) n.focus();
+    return;
+  }
+  if (op === 'cancel') { empEditingId = null; renderEmps(); return; }
+
+  if (op === 'save') {
+    const li = btn.closest('li');
+    const name = li.querySelector('[data-ef=name]').value.trim();
+    const role = li.querySelector('[data-ef=role]').value.trim();
+    const accessRole = (li.querySelector('[data-ef=accessRole]') || {}).value || 'executor';
+    const password = li.querySelector('[data-ef=password]').value;
+    const avatar = (li.querySelector('[data-ef=avatar]') || {}).value || '';
+    if (!name) return toast('Укажите фамилию и имя', 'err');
+    if (password && password.length < 4) return toast('Пароль должен быть не короче 4 символов', 'err');
+    const body = { name, role, accessRole, avatar };
+    if (password) body.password = password; /* пустой — оставить прежний (empty — keep the previous one) */
+    try {
+      await api('/api/employees/' + id, { method: 'PUT', body });
+      empEditingId = null;
+      toast('Справочник обновлён', 'ok');
+      await load();
+    } catch (e) { toast(e.message, 'err'); }
+    return;
+  }
+
+  if (op === 'del') {
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed'); btn.textContent = 'точно?';
+      btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '✕'; }, 2600);
+      return;
+    }
+    clearTimeout(btn._t);
+    try {
+      await api('/api/employees/' + id, { method: 'DELETE' });
+      toast('Сотрудник удалён из справочника; его записи в журнале сохранены', 'ok');
+      await load();
+    } catch (e) { toast(e.message, 'err'); }
+  }
+});
+
+/* ---------- события: справочник «Проекты» ---------- */
+$('#projAddBtn').addEventListener('click', () => {
+  if (!isAdmin()) { toast('Справочник «Проекты» ведёт администратор', 'err'); return; }
+  if (projDraft) {
+    const n = document.querySelector('#projRows [data-pf=name]'); if (n) n.focus();
+    return;
+  }
+  projDraftNum = nextProjNum(projects); /* превью; финальный номер присваивает сервер */
+  projDraft = { name: '', comment: '' };
+  renderProjects();
+  const n = document.querySelector('#projRows [data-pf=name]'); if (n) n.focus();
+});
+
+$('#projRows').addEventListener('click', async ev => {
+  const btn = ev.target.closest('button'); if (!btn) return;
+  const op = btn.dataset.pop;
+
+  if (op === 'discard') { projDraft = null; projDraftNum = null; renderProjects(); return; }
+  if (op === 'cancel') { projEditingId = null; renderProjects(); return; }
+  if (op === 'edit') {
+    projEditingId = btn.dataset.id; renderProjects();
+    const n = document.querySelector(`#projRows tr[data-id="${btn.dataset.id}"] [data-pf=name]`);
+    if (n) { n.focus(); n.select(); }
+    return;
+  }
+  if (op === 'save') {
+    btn.disabled = true;
+    const tr = btn.closest('tr');
+    const name = tr.querySelector('[data-pf=name]').value.trim();
+    const comment = tr.querySelector('[data-pf=comment]').value.trim();
+    if (!name) { toast('Укажите наименование проекта', 'err'); btn.disabled = false; return; }
+    const id = (tr.dataset.id && tr.dataset.id !== 'new') ? tr.dataset.id : null;
+    try {
+      const saved = id
+        ? await api('/api/projects/' + id, { method: 'PUT', body: { name, description: comment } })
+        : await api('/api/projects', { method: 'POST', body: { name, description: comment } });
+      projDraft = null; projDraftNum = null; projEditingId = null;
+      toast(id ? `Проект №${saved.num} обновлён` : `Проект №${saved.num} внесён в справочник`, 'ok');
+      await load();
+    } catch (e) {
+      toast(e.message, 'err');
+      btn.disabled = false;
+    }
+    return;
+  }
+  if (op === 'del') {
+    const id = btn.dataset.id;
+    if (!btn.classList.contains('armed')) {
+      btn.classList.add('armed'); btn.textContent = 'точно?';
+      btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '✕'; }, 2600);
+      return;
+    }
+    clearTimeout(btn._t);
+    try {
+      await api('/api/projects/' + id, { method: 'DELETE' });
+      toast('Проект удалён; записи журнала с этой задачей сохранены', 'ok');
+      await load();
+    } catch (e) { toast(e.message, 'err'); }
+  }
+});
+
+/* Enter в редактируемой строке «Проекты» = сохранить */
+$('#projRows').addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter' || ev.target.tagName !== 'INPUT') return;
+  const tr = ev.target.closest('tr.editing');
+  if (!tr) return;
+  ev.preventDefault();
+  const b = tr.querySelector('[data-pop=save]'); if (b) b.click();
+});
+
+/* ---------- часы и статус сервера ---------- */
+function tick() {
+  const now = new Date();
+  const p = n => String(n).padStart(2, '0');
+  $('#clock').textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  $('#clockDate').textContent = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+setInterval(tick, 1000); tick();
+$('#stampDate').textContent = todayISO().split('-').reverse().join('.');
+
+async function checkHealth() {
+  let ok = false;
+  try { const r = await fetch('/api/health', { cache: 'no-store' }); ok = r.ok; } catch {}
+  $('#netDot').className = 'dot ' + (ok ? 'ok' : 'bad');
+  $('#netText').textContent = ok ? 'сервер в сети' : 'сервер недоступен';
+  $('#offline').classList.toggle('show', !ok);
+  const ln = $('#loginNet');
+  if (ln) ln.textContent = ok ? 'сервер в сети' : 'сервер недоступен — проверьте, что «node server.js» запущен';
+}
+setInterval(checkHealth, 10000); checkHealth();
+
+/* ---------- тема интерфейса: светлая / серая / тёмная ---------- */
+const THEME_KEY = 'stufftime_theme';
+function currentTheme() {
+  try { return document.documentElement.getAttribute('data-theme') || 'light'; } catch { return 'light'; }
+}
+function applyTheme(t) {
+  if (t === 'light') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem(THEME_KEY, t); } catch {}
+  document.querySelectorAll('.theme-sel').forEach(s => { if (s.value !== t) s.value = t; });
+}
+document.querySelectorAll('.theme-sel').forEach(s => s.addEventListener('change', e => applyTheme(e.target.value)));
+applyTheme(currentTheme());
+
+/* ---------- тосты ---------- */
+function toast(msg, kind = 'ok') {
+  const box = $('#toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${kind === 'err' ? 'toast-err' : ''}`;
+  t.textContent = msg;
+  box.appendChild(t);
+  while (box.children.length > 4) box.firstChild.remove();
+  setTimeout(() => t.classList.add('out'), 2800);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* ---------- вход / выход ---------- */
+let loginEmps = [], loginEmpId = null;
+
+function showLogin() {
+  $('#loginView').hidden = false;
+  $('#appView').hidden = true;
+  renderLoginEmps();
+}
+function applyRoleUI() {
+  const adm = isAdmin();
+  /* боковая панель и раздел «Сотрудники» — только для администратора */
+  const sidebar = $('#sidebar'); if (sidebar) sidebar.hidden = !adm;
+  const onlymine = document.querySelector('.onlymine');
+  if (onlymine) onlymine.style.display = adm ? '' : 'none';
+  if (!adm) {
+    filters.mine = false;
+    const fm = $('#fMine'); if (fm) fm.checked = false;
+    setPage('tasks');
+  }
+}
+/* ---------- навигация: боковая панель (администратор) ---------- */
+const PAGE_IDS = { tasks: 'pageTasks', employees: 'pageEmployees', projects: 'pageProjects' };
+const PAGE_KEY = 'stufftime_page';
+let currentPage = 'tasks';
+function setPage(p) {
+  if (!PAGE_IDS[p]) p = 'tasks';
+  if (!isAdmin() && p !== 'tasks') p = 'tasks'; /* исполнитель видит только «Задачи» */
+  currentPage = p;
+  try { sessionStorage.setItem(PAGE_KEY, p); } catch {}
+  for (const [key, id] of Object.entries(PAGE_IDS)) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = key !== p;
+  }
+  document.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('active', b.dataset.page === p));
+}
+document.querySelectorAll('.side-btn').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
+function savedPage() {
+  try { const p = sessionStorage.getItem(PAGE_KEY); return PAGE_IDS[p] ? p : null; } catch { return null; }
+}
+
+function showApp() {
+  $('#loginView').hidden = true;
+  $('#appView').hidden = false;
+  $('#meName').textContent = me ? (me.name + (me.accessRole === 'admin' ? ' · админ' : '')) : '—';
+  const mimg = $('#meAvatar');
+  if (mimg) {
+    if (me && me.avatar) { mimg.src = 'avatars/' + encodeURIComponent(me.avatar); mimg.hidden = false; }
+    else { mimg.removeAttribute('src'); mimg.hidden = true; }
+  }
+  applyRoleUI();
+  /* в боковой панели — текущий пользователь */
+  const sbn = $('#sbName'), sbr = $('#sbRole'), sba = $('#sbAvatar');
+  if (sbn && me) {
+    sbn.textContent = me.name;
+    sbr.textContent = me.accessRole === 'admin' ? 'администратор' : 'исполнитель';
+    if (sba) {
+      if (me.avatar) { sba.src = 'avatars/' + encodeURIComponent(me.avatar); sba.hidden = false; }
+      else { sba.removeAttribute('src'); sba.hidden = true; }
+    }
+  }
+  setPage(isAdmin() ? (savedPage() || 'tasks') : 'tasks');
+  renderWeekNav(); /* период недели виден уже до загрузки журнала */
+  load().catch(e => toast(e.message, 'err'));
+}
+
+async function renderLoginEmps() {
+  let list = [];
+  try { list = await api('/api/login/employees'); } catch { list = []; }
+  loginEmps = list;
+  const sel = $('#loginEmp');
+  sel.disabled = !list.length;
+  sel.innerHTML = `<option value="">${list.length ? '— выберите сотрудника —' : 'список сотрудников недоступен или пуст'}</option>` +
+    list.map(e => `<option value="${e.id}">${esc(e.name)}${e.role ? ' · ' + esc(e.role) : ''}${e.accessRole === 'admin' ? ' · админ' : ''}</option>`).join('');
+  updateLoginAvatar();
+}
+
+function updateLoginAvatar() {
+  const e = selectedLoginEmp();
+  const img = $('#loginAvatar');
+  if (e && e.avatar) { img.src = 'avatars/' + encodeURIComponent(e.avatar); img.hidden = false; }
+  else { img.removeAttribute('src'); img.hidden = true; }
+}
+
+function selectedLoginEmp() { return loginEmps.find(x => x.id === loginEmpId) || null; }
+function isSetupMode() { const e = selectedLoginEmp(); return Boolean(e && !e.hasPassword); }
+
+$('#loginEmp').addEventListener('change', ev => {
+  loginEmpId = ev.target.value || null;
+  $('#loginErr').textContent = '';
+  updateLoginAvatar();
+  $('#loginPass').placeholder = isSetupMode() ? 'Задайте пароль (устанавливается один раз)' : 'Пароль';
+  $('#loginPass').focus();
+});
+
+async function doLogin() {
+  const btn = $('#loginBtn'), err = $('#loginErr');
+  const password = $('#loginPass').value;
+  if (!loginEmpId) { err.textContent = 'Выберите сотрудника из справочника (логин)'; return; }
+  if (!password) { err.textContent = 'Введите пароль'; return; }
+  btn.disabled = true; err.textContent = '';
+  const setupWas = isSetupMode();
+  try {
+    const r = await api('/api/login', { method: 'POST', body: { employeeId: loginEmpId, password, setup: setupWas } });
+    setToken(r.token);
+    me = { id: loginEmpId, name: r.name, role: r.role, accessRole: r.accessRole || 'executor', avatar: r.avatar || '' };
+    $('#loginPass').value = '';
+    showApp();
+    toast((setupWas ? 'Пароль установлен. ' : '') + 'Добро пожаловать, ' + String(r.name).split(' ')[0] + '!', 'ok');
+  } catch (e) {
+    err.textContent = e.message;
+  } finally { btn.disabled = false; }
+}
+$('#loginBtn').addEventListener('click', doLogin);
+$('#loginPass').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); doLogin(); } });
+
+$('#logoutBtn').addEventListener('click', async () => {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  setToken(null); me = null;
+  draft = null; editingId = null; empEditingId = null;
+  weekOffset = 0; /* следующий вход — с текущей недели */
+  projDraft = null; projDraftNum = null; projEditingId = null; closeTaskDrop();
+  filters.mine = false; const fm = $('#fMine'); if (fm) fm.checked = false;
+  showLogin();
+  toast('Вы вышли из системы', 'ok');
+});
+
+/* ---------- «только мои записи» ---------- */
+$('#fMine').addEventListener('change', e => { filters.mine = e.target.checked; renderRows(); });
+
+/* ---------- старт: продолжить сессию или показать вход ---------- */
+(async function init() {
+  checkHealth();
+  loadAvatars();
+  if (getToken()) {
+    try {
+      const r = await api('/api/whoami');
+      me = { id: r.employeeId, name: r.name, role: r.role, accessRole: r.accessRole || 'executor', avatar: r.avatar || '' };
+      showApp();
+      return;
+    } catch { /* нет активной сессии — показываем вход */ }
+  }
+  showLogin();
+})();
+</script>
+</body>
+</html>
