@@ -1,10 +1,10 @@
-/*  STUFFTIME — стили интерфейса (вынесены из index.html в отдельный файл)
+/*  Garbege stUff — стили интерфейса (вынесены из index.html в отдельный файл)
 
     Темы оформления:
       · светлая (по умолчанию) — <html> без атрибута data-theme
       · серая  — <html data-theme="gray">
       · тёмная — <html data-theme="dark">
-    Выбор темы — в шапке и на экране входа (select.theme-sel);
+    Выбор темы — в шапке и на экране входа (свой выпадающий список .theme-dd);
     значение запоминается в localStorage (ключ stufftime_theme).
 */
 
@@ -109,10 +109,12 @@ body{font-family:var(--body);background:var(--paper);color:var(--ink);min-height
 [hidden]{display:none!important}
 
 /* ── логотип и шапка (обложка) ── */
-.cover{position:relative;z-index:1;color:#fff;
+.cover{position:relative;z-index:5;color:#fff;
   background:radial-gradient(700px 260px at 85% -40%,rgba(242,197,61,.16),transparent 60%),
              linear-gradient(155deg,#1d3327,#14231c 72%);
   border-bottom:6px solid var(--mark)}
+/* z-index выше, чем у контента (.app-shell — z-index:1): открытое меню выбора темы
+   раскрывается вниз и должно перекрывать контент под шапкой */
 .cover::after{content:'';position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
@@ -142,17 +144,29 @@ h1{font-family:var(--display);font-size:clamp(26px,4.2vw,46px);line-height:1.06;
 .dot.bad{background:#f87171}
 @keyframes ping{0%{box-shadow:0 0 0 0 rgba(74,222,128,.5)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
 
-/* ── переключатель темы ── */
-.theme-label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--ink-soft)}
-.theme-sel{font:inherit;font-size:12px;font-weight:600;padding:5px 8px;border-radius:999px;
-  border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer;transition:.15s}
-.theme-sel:hover{border-color:var(--pine)}
-.theme-sel:focus{outline:none;border-color:var(--mark);box-shadow:0 0 0 3px rgba(46,92,68,.15)}
-/* в шапке (тёмная обложка) — вариант под обложку */
-.cover .theme-label{color:#cfe0d6}
-.cover .theme-sel{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#eaf2ec}
-.cover .theme-sel:hover{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.16)}
-.cover .theme-sel:focus{border-color:var(--mark);box-shadow:0 0 0 3px rgba(242,197,61,.25)}
+/* ── переключатель темы ──
+   Свой выпадающий список (не нативный <select>): браузер рисует список
+   опций системными цветами, из-за чего в выпадающем списке мог получаться
+   светлый текст на светлом фоне. Наш список рисуется палитрой текущей темы:
+   фон --panel, текст --ink, активный пункт --mark-soft — читаем во всех темах. */
+.theme-dd{position:relative;display:inline-flex;align-items:center;font-size:12px;font-weight:500;color:var(--ink-soft)}
+.theme-dd-btn{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12px;font-weight:600;white-space:nowrap;
+  padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer;transition:.15s}
+.theme-dd-btn:hover{border-color:var(--pine)}
+.theme-dd-btn:focus{outline:none;border-color:var(--mark);box-shadow:0 0 0 3px rgba(46,92,68,.15)}
+.theme-dd-caret{font-size:10px;opacity:.7}
+.theme-dd-list{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:140px;margin:0;padding:6px;list-style:none;
+  background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 12px 28px rgba(28,43,34,.28)}
+.theme-dd-list li{padding:7px 12px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;transition:background .12s}
+.theme-dd-list li:hover{background:var(--mark-soft)}
+.theme-dd-list li.cur{background:var(--mark-soft)}
+.theme-dd-list li.cur::before{content:'✓  '}
+/* в шапке (тёмная обложка) — кнопка полупрозрачная под обложку;
+   открытое меню всё равно рисуется палитрой текущей темы */
+.cover .theme-dd{color:#cfe0d6}
+.cover .theme-dd-btn{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#eaf2ec}
+.cover .theme-dd-btn:hover{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.16)}
+.cover .theme-dd-btn:focus{border-color:var(--mark);box-shadow:0 0 0 3px rgba(242,197,61,.25)}
 
 #offline{display:none;position:relative;z-index:1;max-width:1140px;margin:14px auto 0;padding:12px 18px;background:var(--offline-bg);border:1.5px solid var(--offline-line);color:var(--offline-ink);border-radius:10px;font-weight:500;font-size:14px}
 #offline.show{display:block;animation:rise .3s both}
@@ -184,8 +198,6 @@ h1{font-family:var(--display);font-size:clamp(26px,4.2vw,46px);line-height:1.06;
 .userbar .me b{color:#fff}
 .btn-logout{font:inherit;font-size:12px;font-weight:600;color:#fff;background:transparent;border:1.5px solid rgba(255,255,255,.3);border-radius:999px;padding:5px 12px;cursor:pointer;transition:.15s}
 .btn-logout:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.5)}
-.onlymine{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);cursor:pointer;user-select:none;padding:7px 4px}
-.onlymine input{width:auto;accent-color:var(--pine)}
 .arole{display:block;margin-top:2px;font-size:11px}
 .arole-admin{color:var(--pine);font-weight:700}
 .arole-exec{color:var(--ink-soft);opacity:.75}
@@ -308,11 +320,21 @@ tr.editing td:first-child{border-left:3px solid var(--mark)}
 .op-del:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
 .op.armed{background:var(--danger);border-color:var(--danger);color:#fff;width:auto;padding:0 10px;font-size:12px;font-weight:700}
 
+/* архивные записи (дата на archive_day и более дней раньше текущей):
+   для всех, кроме администратора, кнопки ✎/✕ неактивны, в строке — отметка 🔒 */
+.op[disabled]{opacity:.4;cursor:not-allowed}
+.op[disabled]:hover{border-color:var(--line);color:var(--ink-soft);background:var(--field);transform:none}
+.row-arch{opacity:.82}
+.arch-lock{font-size:11px;margin-left:5px;vertical-align:1px}
+
 .ledger-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
 #rowsInfo{font-size:13px;color:var(--ink-soft)}
 .btn{font:inherit;font-weight:600;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;transition:.15s;color:var(--ink)}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:.6;cursor:wait}
+.foot-btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn-print{background:var(--panel-soft);border:1.5px solid var(--line);color:var(--ink)}
+.btn-print:hover{border-color:var(--pine);color:var(--pine);transform:translateY(-1px)}
 .btn-add{background:var(--pine);color:#fff;box-shadow:0 5px 14px rgba(46,92,68,.28);font-weight:700}
 .btn-add:hover{background:var(--pine-dark);transform:translateY(-1px)}
 
@@ -368,6 +390,14 @@ tr.editing td:first-child{border-left:3px solid var(--mark)}
 .task-name{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .task-none{padding:10px 11px;font-size:13px;color:var(--ink-soft)}
 
+/* ── страница «Отчёты» (plotly.js) ── */
+.report-note{font-size:13.5px;color:var(--ink-soft);margin-bottom:14px}
+.report-card{border:1.5px solid var(--line);border-radius:10px;background:var(--panel-soft);padding:14px;margin-bottom:16px}
+.report-card:last-child{margin-bottom:0}
+.report-card h3{font-family:var(--display);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:400;color:var(--ink);margin-bottom:8px}
+.plotly-box{width:100%;min-height:340px}
+.report-err{color:var(--danger);background:var(--danger-soft);border:1.5px dashed var(--danger);border-radius:10px;padding:18px;font-size:14px;line-height:1.6}
+
 /* ── подвал ── */
 footer{display:grid;grid-template-columns:1fr 1fr;gap:18px;font-size:12.5px;color:var(--ink-soft);border-top:1px solid var(--line);padding-top:16px}
 @media(max-width:820px){footer{grid-template-columns:1fr}}
@@ -380,6 +410,22 @@ code{font-family:var(--mono);background:var(--code-bg);padding:1px 5px;border-ra
 /* подпись внизу страницы */
 .credit{grid-column:1/-1;text-align:center;font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.03em;padding-top:14px;border-top:1px dashed var(--line)}
 .login-credit{margin-top:12px;text-align:center;font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em}
+
+/* версия приложения внизу страницы: «Garbege stUff ver …» (version — из data/setup.json) */
+.app-version{text-align:center;font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.04em}
+footer .app-version{grid-column:1/-1;padding-top:10px;border-top:1px dashed var(--line)}
+.login-card .app-version{margin-top:6px;font-size:11px}
+
+/* ── заглушка (public/placeholder.html): баннер «Функционал в разработке» ── */
+.placeholder-page{position:relative;z-index:1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px}
+.placeholder-card{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;padding:42px 30px;border-style:dashed}
+.placeholder-logo{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}
+.dev-banner{width:100%;font-family:var(--display);font-size:clamp(16px,2.8vw,24px);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--pine);padding:16px 18px;border-radius:10px;box-shadow:0 10px 24px rgba(46,92,68,.3)}
+.placeholder-note{color:var(--ink-soft);font-size:14px;max-width:460px}
+
+/* ── страница «Настройка приложения»: файл заглушки выводится в iframe ── */
+.settings-frame{border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
+.settings-frame iframe{display:block;width:100%;min-height:520px;border:none}
 
 /* ── тосты ── */
 #toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:60}

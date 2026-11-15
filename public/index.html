@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stufftime — Журнал</title>
+<title>Garbege stUff — Журнал</title>
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,14 +20,21 @@
 <div id="loginView">
   <div class="login-card">
     <div class="login-top">
-      <img class="login-logo" src="logo.png" alt="Логотип Stufftime">
+      <img class="login-logo" src="logo.png" alt="Логотип Garbege stUff">
       <div class="login-top-text">
-        <div class="login-brand">STUFFTIME · ЖУРНАЛ</div>
-        <label class="theme-label">Тема: <select class="theme-sel" title="Тема интерфейса: светлая / серая / тёмная">
-          <option value="light">светлая</option>
-          <option value="gray">серая</option>
-          <option value="dark">тёмная</option>
-        </select></label>
+        <div class="login-brand">Garbege stUff · ЖУРНАЛ</div>
+        <div class="theme-dd">
+          <button class="theme-dd-btn" type="button" title="Тема интерфейса: светлая / серая / тёмная" aria-haspopup="listbox" aria-expanded="false">
+            <span class="theme-dd-label">Тема:</span>
+            <span class="theme-dd-value">светлая</span>
+            <span class="theme-dd-caret" aria-hidden="true">▾</span>
+          </button>
+          <ul class="theme-dd-list" role="listbox" aria-label="Тема интерфейса" hidden>
+            <li role="option" data-theme-choice="light">светлая</li>
+            <li role="option" data-theme-choice="gray">серая</li>
+            <li role="option" data-theme-choice="dark">тёмная</li>
+          </ul>
+        </div>
       </div>
     </div>
     <h1 class="login-title">Вход в журнал</h1>
@@ -43,6 +50,7 @@
     <div class="login-err" id="loginErr"></div>
     <div class="login-net" id="loginNet">подключение к серверу…</div>
     <div class="login-credit">Разработка студии «Мусорные Дела»</div>
+    <div class="app-version">Garbege stUff ver <span data-ver>…</span></div>
   </div>
 </div>
 
@@ -50,15 +58,15 @@
 <header class="cover">
   <div class="cover-inner">
     <div class="cover-left">
-      <img class="logo" src="logo.png" alt="Логотип Stufftime">
+      <img class="logo" src="logo.png" alt="Логотип Garbege stUff">
       <div class="cover-text">
-        <div class="cover-kicker">производственный журнал · рег. № 001</div>
+        <div class="cover-kicker">Производственный журнал · рег. № <span data-regver>…</span></div>
         <h1>ЖУРНАЛ</h1>
-        <div class="cover-sub">Stufftime · задачи сотрудников по датам и часам</div>
+        <div class="cover-sub">Garbege stUff · задачи сотрудников по датам и часам</div>
       </div>
     </div>
     <div class="stamp" title="система в работе">
-      <span class="stamp-line">СТУФТТАЙМ</span>
+      <span class="stamp-line">Garbege stUff</span>
       <span class="stamp-line stamp-big">ПРИНЯТО К УЧЁТУ</span>
       <span class="stamp-line" id="stampDate">—</span>
     </div>
@@ -67,11 +75,18 @@
       <div class="clock-date" id="clockDate">—</div>
       <div class="chip" role="status"><span class="dot" id="netDot"></span><span id="netText">подключение…</span></div>
       <div class="userbar"><img id="meAvatar" class="me-avatar" alt="" hidden><span class="me">вход: <b id="meName">—</b></span><button class="btn-logout" id="logoutBtn" type="button">Выйти</button></div>
-      <label class="theme-label">Тема: <select id="themeSel" class="theme-sel" title="Тема интерфейса: светлая / серая / тёмная">
-        <option value="light">светлая</option>
-        <option value="gray">серая</option>
-        <option value="dark">тёмная</option>
-      </select></label>
+      <div class="theme-dd">
+        <button class="theme-dd-btn" type="button" title="Тема интерфейса: светлая / серая / тёмная" aria-haspopup="listbox" aria-expanded="false">
+          <span class="theme-dd-label">Тема:</span>
+          <span class="theme-dd-value">светлая</span>
+          <span class="theme-dd-caret" aria-hidden="true">▾</span>
+        </button>
+        <ul class="theme-dd-list" role="listbox" aria-label="Тема интерфейса" hidden>
+          <li role="option" data-theme-choice="light">светлая</li>
+          <li role="option" data-theme-choice="gray">серая</li>
+          <li role="option" data-theme-choice="dark">тёмная</li>
+        </ul>
+      </div>
     </div>
   </div>
 </header>
@@ -80,10 +95,12 @@
 
 <div class="app-shell">
   <nav class="sidebar" id="sidebar" hidden aria-label="Разделы (администратор)">
-    <div class="sidebar-brand">STUFFTIME</div>
+    <div class="sidebar-brand">Garbege stUff</div>
     <button class="side-btn active" type="button" data-page="tasks"><span class="side-ico" aria-hidden="true">🗒</span><span>Задачи</span></button>
     <button class="side-btn" type="button" data-page="employees"><span class="side-ico" aria-hidden="true">👥</span><span>Сотрудники</span></button>
     <button class="side-btn" type="button" data-page="projects"><span class="side-ico" aria-hidden="true">📁</span><span>Проекты</span></button>
+    <button class="side-btn" type="button" data-page="reports"><span class="side-ico" aria-hidden="true">📊</span><span>Отчёты</span></button>
+    <button class="side-btn" type="button" data-page="settings"><span class="side-ico" aria-hidden="true">⚙️</span><span>Настройка</span></button>
     <div class="sidebar-foot">
       <span class="sb-user"><img id="sbAvatar" class="me-avatar" alt="" hidden><b id="sbName">—</b></span>
       <span class="sb-role" id="sbRole">—</span>
@@ -100,7 +117,6 @@
           <div class="filters">
             <input id="fText" placeholder="поиск: задача, комментарий…" autocomplete="off">
             <select id="fEmp" title="Фильтр по сотруднику"><option value="">все сотрудники</option></select>
-            <label class="onlymine" title="Показывать только записи текущего пользователя"><input type="checkbox" id="fMine"> только мои</label>
           </div>
         </div>
         <div class="week-nav" role="group" aria-label="Навигация по неделям">
@@ -125,7 +141,10 @@
         </div>
         <div class="ledger-foot">
           <span id="rowsInfo"></span>
-          <button class="btn btn-add" id="addBtn">+ Добавить строку</button>
+          <div class="foot-btns">
+            <button class="btn btn-print" id="printBtn" type="button" title="Сохранить таблицу записей выбранной недели в temporary/raport.csv">🖨️ Печать</button>
+            <button class="btn btn-add" id="addBtn">+ Добавить строку</button>
+          </div>
         </div>
       </section>
     </section>
@@ -181,8 +200,38 @@
       </section>
     </section>
 
+    <section id="pageReports" class="page" hidden>
+      <section class="panel" aria-label="Отчёты">
+        <div class="panel-head">
+          <h2>Отчёты</h2>
+          <span class="panel-note">график строится библиотекой <b>plotly.js</b> — файл библиотеки в составе проекта (<code>public/vendor/plotly.min.js</code>), внешних зависимостей нет</span>
+        </div>
+        <p class="report-note">Примеры столбчатых диаграмм на данных журнала за текущую неделю (понедельник — воскресенье). Наведите курсор на столбец — появится точное значение.</p>
+        <div class="report-card">
+          <h3>Часы по дням недели</h3>
+          <div id="chartWeek" class="plotly-box" role="img" aria-label="Столбчатая диаграмма: часы по дням недели"></div>
+        </div>
+        <div class="report-card">
+          <h3>Часы по сотрудникам</h3>
+          <div id="chartEmps" class="plotly-box" role="img" aria-label="Столбчатая диаграмма: часы по сотрудникам"></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="pageSettings" class="page" hidden>
+      <section class="panel" aria-label="Настройка приложения">
+        <div class="panel-head">
+          <h2>Настройка приложения</h2>
+          <span class="panel-note">страница настроек: выводится файл заглушки <code>public/placeholder.html</code></span>
+        </div>
+        <div class="settings-frame">
+          <iframe id="settingsFrame" src="placeholder.html" title="Файл заглушки: «Функционал в разработке»" loading="lazy"></iframe>
+        </div>
+      </section>
+    </section>
+
     <footer>
-      <div><b>Архитектура.</b> Браузер (HTML + JS, fetch) общается с сервером по REST API; данные — на сервере: журнал и сессии в <code>data/stufftime.json</code>, справочник сотрудников — в <code>data/employees.json</code>, проекты — в <code>data/projects.json</code>, готовые аватарки — в <code>public/avatars</code>. Один сервер — сколько угодно клиентов: откройте <code>http://&lt;IP-сервера&gt;:8080</code> с любой машины в сети. Записи хранят «фотографию» имени сотрудника, поэтому история не теряется даже при удалении человека из справочника.</div>
+      <div><b>Архитектура.</b> Браузер (HTML + JS, fetch) общается с сервером по REST API; данные — на сервере: журнал и сессии в <code>data/database.json</code>, справочник сотрудников — в <code>data/employees.json</code>, проекты — в <code>data/projects.json</code>, готовые аватарки — в <code>public/avatars</code>. Один сервер — сколько угодно клиентов: откройте <code>http://&lt;IP-сервера&gt;:8080</code> с любой машины в сети. Записи хранят «фотографию» имени сотрудника, поэтому история не теряется даже при удалении человека из справочника.</div>
       <ul class="api-ref">
         <li><span class="m get">GET</span> /api/employees — справочник сотрудников</li>
         <li><span class="m get">GET</span> /api/avatars — готовые аватарки (public/avatars)</li>
@@ -194,12 +243,15 @@
         <li><span class="m put">PUT</span> /api/projects/:id — отредактировать проект</li>
         <li><span class="m del">DEL</span> /api/projects/:id — удалить проект</li>
         <li><span class="m get">GET</span> /api/entries — записи журнала</li>
-        <li><span class="m post">POST</span> /api/entries — новая запись</li>
-        <li><span class="m put">PUT</span> /api/entries/:id — корректировка</li>
-        <li><span class="m del">DEL</span> /api/entries/:id — удалить запись</li>
+        <li><span class="m post">POST</span> /api/entries — новая запись (архивная дата — только администратор)</li>
+        <li><span class="m put">PUT</span> /api/entries/:id — корректировка (архивные записи — только администратор)</li>
+        <li><span class="m del">DEL</span> /api/entries/:id — удалить запись (архивные — только администратор)</li>
+        <li><span class="m post">POST</span> /api/print — печать: неделя → temporary/raport.csv</li>
         <li><span class="m get">GET</span> /api/stats — сводка · /api/health — статус</li>
+        <li><span class="m get">GET</span> /api/setup — настройки приложения (data/setup.json, версия)</li>
       </ul>
       <div class="credit">Разработка студии «Мусорные Дела»</div>
+      <div class="app-version">Garbege stUff ver <span data-ver>…</span></div>
     </footer>
   </main>
 </div>
@@ -225,6 +277,12 @@ const fmtDate = d => { const [a,b,c] = String(d).split('-'); return `${c}.${b}.$
 const fmtH = x => String(Math.round(x * 100) / 100).replace('.', ',');
 const isoLocalDate = d => { const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
 const todayISO = () => isoLocalDate(new Date());
+const plural = (n, one, few, many) => {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+};
 
 async function api(path, opts = {}) {
   let res;
@@ -253,6 +311,13 @@ async function api(path, opts = {}) {
 let employees = [], entries = [], stats = null, projects = [];
 let me = null;                 // текущий пользователь (после входа)
 const isAdmin = () => !!(me && me.accessRole === 'admin');
+let archiveDay = 8;            // archive_day из data/setup.json — архив записей
+function archiveCutoffISO() {  // дата, на archiveDay и более дней раньше текущей (и всё, что раньше) — в архиве
+  const n = Number(archiveDay);
+  if (!Number.isFinite(n) || n < 0) return todayISO();
+  return isoLocalDate(new Date(Date.now() - n * 86400000));
+}
+const isArchived = date => String(date || '') <= archiveCutoffISO();
 let draft = null;          // новая строка, ещё не сохранённая
 let editingId = null;      // id записи, которую правят
 let empEditingId = null;   // id сотрудника, которого правят
@@ -260,7 +325,7 @@ let projDraft = null;      // новая строка проекта, ещё н�
 let projDraftNum = null;   // превью номера для новой строки (финальный номер присваивает сервер)
 let projEditingId = null;  // id проекта, который правят
 let taskDrop = null;       // открытый выпадающий список задач (выбор из справочника «Проекты»)
-const filters = { q: '', emp: '', mine: false };
+const filters = { q: '', emp: '' };
 let weekOffset = 0; // 0 — текущая неделя; −1, −2, … — прошедшие (будущие недели не открываются)
 
 /* ---------- рендер журнала ---------- */
@@ -340,15 +405,19 @@ function rowHTML(v, editable) {
     </tr>`;
   }
   const role = (employees.find(e => e.id === v.employeeId) || {}).role || '';
-  return `<tr class="row d${dateColor(v.date)}" data-id="${v.id}">
-    <td class="c-date">${fmtDate(v.date)}</td>
+  /* Архив: запись с датой, на archive_day и более дней раньше текущей,
+     — для всех, кроме администратора, редактирование (✎) и удаление (✕) недоступны */
+  const locked = !isAdmin() && isArchived(v.date);
+  const lockTitle = `Архив: дата ${fmtDate(v.date)} — на ${archiveDay} и более дней раньше текущей. Редактировать и удалять может только администратор`;
+  return `<tr class="row${locked ? ' row-arch' : ''} d${dateColor(v.date)}" data-id="${v.id}">
+    <td class="c-date">${fmtDate(v.date)}${locked ? ` <span class="arch-lock" title="${lockTitle}">🔒</span>` : ''}</td>
     <td>${esc(v.employeeName)}${role ? `<span class="emp-role-tag">${esc(role)}</span>` : ''}</td>
     <td>${esc(v.task)}</td>
     <td><span class="hours">${fmtH(v.hours)} ч</span></td>
     <td class="com">${esc(v.comment) || '—'}</td>
     <td class="ops">
-      <button class="op" data-op="edit" data-id="${v.id}" title="Исправить">✎</button>
-      <button class="op op-del" data-op="del" data-id="${v.id}" title="Удалить">✕</button>
+      <button class="op" data-op="edit" data-id="${v.id}" title="${locked ? lockTitle : 'Исправить'}"${locked ? ' disabled' : ''}>✎</button>
+      <button class="op op-del" data-op="del" data-id="${v.id}" title="${locked ? lockTitle : 'Удалить'}"${locked ? ' disabled' : ''}>✕</button>
     </td>
   </tr>`;
 }
@@ -377,7 +446,6 @@ function renderRows() {
   /* записи выбранной недели (даты в формате ГГГГ-ММ-ДД — работает строчное сравнение) */
   const inWeek = entries.filter(e => e.date >= wb.from && e.date <= wb.to);
   const list = inWeek.filter(e => {
-    if (filters.mine && me && e.employeeId !== me.id) return false;
     if (filters.emp && e.employeeId !== filters.emp) return false;
     if (q && !(e.task + ' ' + e.employeeName + ' ' + (e.comment || '')).toLowerCase().includes(q)) return false;
     return true;
@@ -475,9 +543,24 @@ async function load() {
   if (draft && !employees.some(x => x.id === draft.employeeId))
     draft.employeeId = employees[0] ? employees[0].id : '';
   renderAll();
+  /* если открыт раздел «Отчёты» — обновить диаграммы свежими данными */
+  const rep = document.getElementById('pageReports');
+  if (rep && !rep.hidden && isAdmin()) renderReports();
 }
 
 /* ---------- события: журнал ---------- */
+/* Печать: таблица «Задачи» за выбранную неделю сохраняется сервером в temporary/raport.csv */
+$('#printBtn').addEventListener('click', async () => {
+  const btn = $('#printBtn');
+  btn.disabled = true;
+  try {
+    const r = await api('/api/print', { method: 'POST', body: { weekOffset } });
+    toast(`Печать: ${r.rows} ${plural(r.rows, 'запись', 'записи', 'записей')} за ${fmtDate(r.from)} — ${fmtDate(r.to)} → temporary/raport.csv`, 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally { btn.disabled = false; }
+});
+
 $('#addBtn').addEventListener('click', () => {
   if (!employees.length) { toast('Нет доступного сотрудника для записи', 'err'); return; }
   if (!projects.length && !draft) toast('Задача выбирается только из справочника «Проекты» — сначала внесите проект', 'err');
@@ -507,6 +590,16 @@ async function saveRow(tr, btn) {
   if (!projectByName(v.task)) return toast('Задачу можно выбрать только из справочника «Проекты» — ручной ввод отключён', 'err');
   if (!(v.hours > 0)) return toast('Укажите количество часов (больше нуля)', 'err');
   if (v.hours > 24) return toast('Не более 24 часов за день', 'err');
+  /* Архив: запись с архивной датой (раньше на archive_day и более дней) —
+     добавлять и редактировать может только администратор */
+  if (!isAdmin() && isArchived(v.date))
+    return toast(`Архивная дата (${fmtDate(v.date)} — на ${archiveDay} и более дней раньше текущей) — так может сделать только администратор`, 'err');
+  /* Лимит: 24 часа в день на одного человека — проверяем оставшееся время за дату */
+  const usedH = entries
+    .filter(e => e.employeeId === v.employeeId && e.date === v.date && (!v.id || e.id !== v.id))
+    .reduce((a, e) => a + (Number(e.hours) || 0), 0);
+  const remainH = Math.round((24 - usedH) * 100) / 100;
+  if (v.hours > remainH + 1e-9) return toast(`Не более 24 часов за день на одного сотрудника: на ${fmtDate(v.date)} уже учтено ${fmtH(usedH)} ч, осталось ${fmtH(Math.max(remainH, 0))} ч`, 'err');
   try {
     const saved = await api(v.id ? '/api/entries/' + v.id : '/api/entries', { method: v.id ? 'PUT' : 'POST', body: v });
     const wasEdit = !!v.id;
@@ -529,6 +622,9 @@ $('#rows').addEventListener('click', async ev => {
   if (op === 'discard') { draft = null; renderRows(); return; }
   if (op === 'cancel') { editingId = null; renderRows(); return; }
   if (op === 'edit') {
+    const e = entries.find(x => x.id === btn.dataset.id);
+    if (!isAdmin() && e && isArchived(e.date))
+      return toast(`Запись в архиве (дата ${fmtDate(e.date)} — на ${archiveDay} и более дней раньше текущей) — редактировать может только администратор`, 'err');
     editingId = btn.dataset.id; renderRows();
     const t = document.querySelector(`#rows tr[data-id="${btn.dataset.id}"] [data-f=task]`);
     if (t) { t.focus(); t.select(); }
@@ -536,6 +632,9 @@ $('#rows').addEventListener('click', async ev => {
   }
   if (op === 'del') {
     const id = btn.dataset.id;
+    const e = entries.find(x => x.id === id);
+    if (!isAdmin() && e && isArchived(e.date))
+      return toast(`Запись в архиве (дата ${fmtDate(e.date)} — на ${archiveDay} и более дней раньше текущей) — удалять может только администратор`, 'err');
     if (!btn.classList.contains('armed')) {
       btn.classList.add('armed'); btn.textContent = 'точно?';
       btn._t = setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '✕'; }, 2600);
@@ -807,6 +906,90 @@ $('#projRows').addEventListener('keydown', ev => {
   const b = tr.querySelector('[data-pop=save]'); if (b) b.click();
 });
 
+/* ---------- отчёты: столбчатые диаграммы (plotly.js, файл из состава проекта) ---------- */
+let plotlyLoading = null;
+function loadPlotly() {
+  if (window.Plotly) return Promise.resolve(window.Plotly);
+  if (plotlyLoading) return plotlyLoading;
+  plotlyLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'vendor/plotly.min.js'; /* локальный файл проекта — без CDN и npm */
+    s.async = true;
+    s.onload = () => {
+      if (window.Plotly) resolve(window.Plotly);
+      else { plotlyLoading = null; reject(new Error('plotly.js не загрузился (файл public/vendor/plotly.min.js отсутствует или повреждён)')); }
+    };
+    s.onerror = () => { plotlyLoading = null; reject(new Error('plotly.js не найден: public/vendor/plotly.min.js отсутствует')); };
+    document.head.appendChild(s);
+  });
+  return plotlyLoading;
+}
+
+/* палитра — из того же набора цветов, что и строки журнала */
+const PLOTLY_COLORS = ['#2e5c44', '#8a5a00', '#5b3a8e', '#a03a2c', '#1d5b8e', '#7a3b5e', '#3c7257', '#9a6b00'];
+const PLOTLY_CONFIG = { responsive: true, displayModeBar: false };
+function plotlyLayout(title, xTitle, yTitle) {
+  /* читаем цвет текста из текущей темы интерфейса — диаграмма подстраивается под светлую/серую/тёмную */
+  let ink = '#1c2b22';
+  try { ink = (getComputedStyle(document.documentElement).getPropertyValue('--ink') || '').trim() || ink; } catch {}
+  return {
+    title: { text: title, font: { family: 'Rubik, sans-serif', size: 15, color: ink } },
+    font: { family: 'Rubik, sans-serif', size: 13, color: ink },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 54, l: 64, r: 28, b: 52 },
+    xaxis: { title: { text: xTitle || '' }, gridcolor: 'rgba(128,128,128,.16)' },
+    yaxis: { title: { text: yTitle || '' }, gridcolor: 'rgba(128,128,128,.16)', zeroline: false },
+    bargap: 0.35,
+    showlegend: false,
+  };
+}
+
+function reportsError(html) {
+  for (const id of ['chartWeek', 'chartEmps']) {
+    const box = document.getElementById(id);
+    if (box) box.innerHTML = `<div class="report-err">⚠ ${html}</div>`;
+  }
+}
+
+async function renderReports() {
+  if (!isAdmin()) return; /* раздел «Отчёты» — только для администратора */
+  try {
+    const Plotly = await loadPlotly();
+    /* данные — за текущую неделю (понедельник — воскресенье), из журнала */
+    const wb = weekBounds(0);
+    const inWeek = entries.filter(e => e.date >= wb.from && e.date <= wb.to);
+    const total = inWeek.reduce((a, e) => a + (e.hours || 0), 0);
+    /* 1) часы по дням недели */
+    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    const dayHours = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(wb.from + 'T00:00:00');
+      d.setDate(d.getDate() + i);
+      const iso = isoLocalDate(d);
+      dayHours.push(Math.round(inWeek.filter(e => e.date === iso).reduce((a, e) => a + (e.hours || 0), 0) * 100) / 100);
+    }
+    Plotly.react('chartWeek', [{
+      x: dayNames, y: dayHours, type: 'bar',
+      marker: { color: PLOTLY_COLORS, line: { width: 0 } },
+      text: dayHours.map(h => h ? h + ' ч' : ''), textposition: 'outside',
+    }], plotlyLayout(`Неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)} · итого ${fmtH(total)} ч`, 'день недели', 'часы'), PLOTLY_CONFIG);
+    /* 2) часы по сотрудникам */
+    const byEmp = new Map();
+    for (const e of inWeek) byEmp.set(e.employeeName, (byEmp.get(e.employeeName) || 0) + (e.hours || 0));
+    const empNames = [...byEmp.keys()].sort((a, b) => a.localeCompare(b, 'ru'));
+    const empHours = empNames.map(n => Math.round(byEmp.get(n) * 100) / 100);
+    Plotly.react('chartEmps', [{
+      x: empNames.length ? empHours : [0],
+      y: empNames.length ? empNames : ['—'],
+      type: 'bar', orientation: 'h',
+      marker: { color: PLOTLY_COLORS.slice(0, Math.max(empNames.length, 1)), line: { width: 0 } },
+      text: empHours.length ? empHours.map(h => h + ' ч') : ['нет записей за неделю'], textposition: 'outside',
+    }], plotlyLayout(`Сотрудников: ${empNames.length} · итого ${fmtH(total)} ч`, 'часы', 'сотрудник'), PLOTLY_CONFIG);
+  } catch (e) {
+    reportsError(esc(e.message) + '. Выполните: <code>node tools/fetch-plotly.js</code> (или перезапустите сервер при доступном интернете — файл скачается автоматически).');
+  }
+}
+
 /* ---------- часы и статус сервера ---------- */
 function tick() {
   const now = new Date();
@@ -828,18 +1011,76 @@ async function checkHealth() {
 }
 setInterval(checkHealth, 10000); checkHealth();
 
-/* ---------- тема интерфейса: светлая / серая / тёмная ---------- */
+/* ---------- версия приложения и настройки — из файла data/setup.json:
+   version (выводится внизу страницы) и archive_day (архив записей) ---------- */
+async function loadSetupVersion() {
+  let v = null, ad = null;
+  try {
+    const r = await api('/api/setup');
+    if (r && r.version !== undefined && r.version !== null && String(r.version) !== '') v = String(r.version);
+    const n = Number(r && r.archive_day);
+    if (r && r.archive_day !== undefined && r.archive_day !== null && Number.isFinite(n) && n >= 0) ad = n;
+  } catch { /* сервер недоступен — используем значения по умолчанию */ }
+  if (ad !== null) archiveDay = ad;
+  /* версия: внизу страницы и в шапке («Производственный журнал · рег. № …») */
+  document.querySelectorAll('[data-ver], [data-regver]').forEach(el => { el.textContent = v || '…'; });
+}
+
+/* ---------- тема интерфейса: светлая / серая / тёмная ----------
+   Выбор темы — свой выпадающий список (а не нативный <select>): браузер
+   рисует список опций системными цветами, из-за чего в выпадающем списке
+   получался светлый текст на светлом фоне. Наш список рисуется палитрой
+   текущей темы (фон --panel, текст --ink) — читаем во всех темах. */
 const THEME_KEY = 'stufftime_theme';
+const THEME_NAMES = { light: 'светлая', gray: 'серая', dark: 'тёмная' };
 function currentTheme() {
   try { return document.documentElement.getAttribute('data-theme') || 'light'; } catch { return 'light'; }
 }
+function syncThemeUI(t) {
+  document.querySelectorAll('.theme-dd').forEach(dd => {
+    const v = dd.querySelector('.theme-dd-value');
+    if (v) v.textContent = THEME_NAMES[t] || t;
+    dd.querySelectorAll('.theme-dd-list li').forEach(li => li.classList.toggle('cur', li.dataset.themeChoice === t));
+  });
+}
 function applyTheme(t) {
+  if (!THEME_NAMES[t]) t = 'light';
   if (t === 'light') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
   try { localStorage.setItem(THEME_KEY, t); } catch {}
-  document.querySelectorAll('.theme-sel').forEach(s => { if (s.value !== t) s.value = t; });
+  syncThemeUI(t);
+  /* если открыт раздел «Отчёты» — перерисовать диаграммы под новую тему */
+  const rep = document.getElementById('pageReports');
+  if (rep && !rep.hidden && isAdmin()) renderReports();
 }
-document.querySelectorAll('.theme-sel').forEach(s => s.addEventListener('change', e => applyTheme(e.target.value)));
+function closeThemeDD(except) {
+  document.querySelectorAll('.theme-dd.open').forEach(dd => {
+    if (dd === except) return;
+    dd.classList.remove('open');
+    const l = dd.querySelector('.theme-dd-list'); if (l) l.hidden = true;
+    const b = dd.querySelector('.theme-dd-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+document.querySelectorAll('.theme-dd').forEach(dd => {
+  const btn = dd.querySelector('.theme-dd-btn');
+  const list = dd.querySelector('.theme-dd-list');
+  if (!btn || !list) return;
+  btn.addEventListener('click', () => {
+    const open = !dd.classList.contains('open');
+    closeThemeDD();
+    dd.classList.toggle('open', open);
+    list.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+  });
+  list.querySelectorAll('li').forEach(li => li.addEventListener('click', () => {
+    applyTheme(li.dataset.themeChoice);
+    closeThemeDD();
+  }));
+});
+document.addEventListener('click', ev => {
+  if (!(ev.target.closest && ev.target.closest('.theme-dd'))) closeThemeDD();
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeThemeDD(); });
 applyTheme(currentTheme());
 
 /* ---------- тосты ---------- */
@@ -866,16 +1107,10 @@ function applyRoleUI() {
   const adm = isAdmin();
   /* боковая панель и раздел «Сотрудники» — только для администратора */
   const sidebar = $('#sidebar'); if (sidebar) sidebar.hidden = !adm;
-  const onlymine = document.querySelector('.onlymine');
-  if (onlymine) onlymine.style.display = adm ? '' : 'none';
-  if (!adm) {
-    filters.mine = false;
-    const fm = $('#fMine'); if (fm) fm.checked = false;
-    setPage('tasks');
-  }
+  if (!adm) setPage('tasks');
 }
 /* ---------- навигация: боковая панель (администратор) ---------- */
-const PAGE_IDS = { tasks: 'pageTasks', employees: 'pageEmployees', projects: 'pageProjects' };
+const PAGE_IDS = { tasks: 'pageTasks', employees: 'pageEmployees', projects: 'pageProjects', reports: 'pageReports', settings: 'pageSettings' };
 const PAGE_KEY = 'stufftime_page';
 let currentPage = 'tasks';
 function setPage(p) {
@@ -888,6 +1123,7 @@ function setPage(p) {
     if (el) el.hidden = key !== p;
   }
   document.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('active', b.dataset.page === p));
+  if (p === 'reports') renderReports(); /* отрисовать диаграммы при входе в раздел */
 }
 document.querySelectorAll('.side-btn').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
 function savedPage() {
@@ -975,18 +1211,15 @@ $('#logoutBtn').addEventListener('click', async () => {
   draft = null; editingId = null; empEditingId = null;
   weekOffset = 0; /* следующий вход — с текущей недели */
   projDraft = null; projDraftNum = null; projEditingId = null; closeTaskDrop();
-  filters.mine = false; const fm = $('#fMine'); if (fm) fm.checked = false;
   showLogin();
   toast('Вы вышли из системы', 'ok');
 });
-
-/* ---------- «только мои записи» ---------- */
-$('#fMine').addEventListener('change', e => { filters.mine = e.target.checked; renderRows(); });
 
 /* ---------- старт: продолжить сессию или показать вход ---------- */
 (async function init() {
   checkHealth();
   loadAvatars();
+  loadSetupVersion();
   if (getToken()) {
     try {
       const r = await api('/api/whoami');

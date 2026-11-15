@@ -1,10 +1,14 @@
 #!/usr/bin/env node
-/*  STUFFTIME — сервер учёта рабочего времени сотрудников
+/*  Garbege stUff — сервер учёта рабочего времени сотрудников
     Запуск:   node server.js   →   http://localhost:8080
-    Данные:   data/stufftime.json  — журнал записей и сессии
+    Данные:   data/database.json   — журнал записей и сессии
               data/employees.json  — справочник сотрудников (отдельный JSON)
               data/projects.json   — справочник проектов (задач): номер, наименование, комментарий
-    Аватарки: public/avatars       — готовый набор картинок (6 шт.)
+              data/setup.json      — настройки приложения: version (версия), archive_day (архив записей)
+    Аватарки: public/avatars       — готовый набор картинок (7 шт., включая raccoon.svg)
+    Графики:  public/vendor/plotly.min.js — библиотека plotly.js для «Отчётов»
+              (если файла нет, сервер скачает его при первом запуске;
+               либо вручную: node tools/fetch-plotly.js)
     Зависимостей нет — только Node.js 16+                                */
 'use strict';
 const http = require('http');
@@ -18,7 +22,10 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const INDEX_FILE = path.join(PUBLIC_DIR, 'index.html');
 const AVATARS_DIR = path.join(PUBLIC_DIR, 'avatars');
 const DATA_DIR = path.join(ROOT, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'stufftime.json');
+const DATA_FILE = path.join(DATA_DIR, 'database.json');
+const LEGACY_DATA_FILE = path.join(DATA_DIR, 'stufftime.json'); /* прежнее имя журнала — разовый перенос */
+const TEMP_DIR = path.join(ROOT, 'temporary'); /* временные файлы: печать (raport.csv) */
+const SETUP_FILE = path.join(DATA_DIR, 'setup.json');
 const EMPS_FILE = path.join(DATA_DIR, 'employees.json');
 const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json');
 const startedAt = Date.now();
@@ -97,14 +104,53 @@ function isoLocal(offsetDays = 0) {
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+/* Неделя (понедельник — воскресенье) по смещению: 0 — текущая, −1, −2 — прошедшие;
+   те же правила, что и у навигации по неделям на клиенте */
+function isoDateOf(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+function weekBoundsISO(offset) {
+  const now = new Date();
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7) + offset * 7);
+  const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+  return { from: isoDateOf(mon), to: isoDateOf(sun) };
+}
 
 /* ---------- хранилище ----------
-   журнал + сессии — data/stufftime.json
+   журнал + сессии — data/database.json (ранее stufftime.json)
    справочник      — data/employees.json (отдельный файл)               */
 let db = { entries: [], sessions: [] };
 let emps = [];
 let projects = [];
 let saveTimer = null, empsTimer = null, projectsTimer = null;
+
+/* настройки приложения — data/setup.json (JSON-файл для настроек):
+   version     — версия приложения;
+   archive_day — архив записей: запись, дата которой на archive_day и более
+                 дней раньше текущей даты, защищена от редактирования и
+                 удаления (для всех, кроме администратора) */
+function archiveDays() {
+  const n = Number(setup.archive_day);
+  return (Number.isFinite(n) && n >= 0) ? Math.floor(n) : 8;
+}
+let setup = { version: '0.4', archive_day: 8 };
+function loadSetup() {
+  try {
+    if (fs.existsSync(SETUP_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(SETUP_FILE, 'utf8'));
+      if (raw && typeof raw === 'object') setup = { version: '0.4', archive_day: 8, ...raw };
+    }
+  } catch (e) { console.warn('[setup] чтение настроек пропущено:', e.message); }
+  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.4';
+  setup.archive_day = archiveDays();
+}
+
+/* Архив: дата записи, на archive_day и более дней раньше текущей даты,
+   — редактировать и удалять её может только администратор */
+function archiveCutoffISO() { return isoLocal(-archiveDays()); }
+function isArchivedDate(date) { return String(date || '') <= archiveCutoffISO(); }
 
 function load() {
   try {
@@ -166,16 +212,34 @@ function load() {
   /* разовая миграция: роли доступа (администратор / исполнитель) */
   if (!db.migratedRoles) {
     for (const e of emps) if (normAccess(e) !== 'admin') e.accessRole = 'executor';
-    /* Иванов Сергей — администратор, все остальные — исполнители */
-    let admin = emps.find(e => String(e.name || '').trim().toLowerCase() === 'иванов сергей');
+    /* Енот — администратор, все остальные — исполнители */
+    let admin = emps.find(e => String(e.name || '').trim().toLowerCase() === 'енот');
     if (admin) {
       admin.accessRole = 'admin';
     } else {
-      /* такого сотрудника ещё нет — создаём администратором (пароль задастся при первом входе) */
-      admin = { id: uid(), name: 'Иванов Сергей', role: '', accessRole: 'admin', createdAt: Date.now() };
+      /* такого сотрудника ещё нет — создаём администратором (пароль 12345, аватар raccoon) */
+      admin = { id: uid(), name: 'Енот', role: 'руководитель', accessRole: 'admin', avatar: 'raccoon.svg', createdAt: Date.now() };
+      setEmployeePassword(admin, '12345');
       emps.push(admin);
     }
     db.migratedRoles = true;
+    flush(); flushEmps();
+  }
+
+  /* разовая миграция: администратор по умолчанию раньше создавался как «Иванов Сергей» —
+     заменяем на «Енот» (имя, пароль 12345, аватар raccoon). Запускается один раз. */
+  if (!db.migratedDefaultAdmin) {
+    const enot = emps.find(e => String(e.name || '').trim().toLowerCase() === 'енот');
+    const legacy = emps.find(e => String(e.name || '').trim().toLowerCase() === 'иванов сергей');
+    if (!enot && legacy) {
+      legacy.name = 'Енот';
+      legacy.accessRole = 'admin';
+      legacy.avatar = 'raccoon.svg';
+      setEmployeePassword(legacy, '12345');
+      legacy.updatedAt = Date.now();
+      console.log('[db] администратор по умолчанию «Иванов Сергей» заменён на «Енот» (пароль 12345, аватар raccoon)');
+    }
+    db.migratedDefaultAdmin = true;
     flush(); flushEmps();
   }
 }
@@ -190,6 +254,10 @@ function flushEmps() {
 function flushProjects() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(PROJECTS_FILE, JSON.stringify(projects, null, 2));
+}
+function flushSetup() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(SETUP_FILE, JSON.stringify(setup, null, 2));
 }
 function save() { clearTimeout(saveTimer); saveTimer = setTimeout(flush, 150); }
 function saveEmps() { clearTimeout(empsTimer); empsTimer = setTimeout(flushEmps, 150); }
@@ -208,7 +276,8 @@ function seed() {
   const e1 = mk('Иванов Иван', 'инженер', 'executor', avs[0]);
   const e2 = mk('Петрова Анна', 'дизайнер', 'executor', avs[1]);
   const e3 = mk('Сидоров Пётр', 'техник', 'executor', avs[2]);
-  const e4 = mk('Иванов Сергей', 'инженер-технолог', 'admin', avs[3]);
+  const e4 = mk('Енот', 'руководитель', 'admin', 'raccoon.svg');
+  setEmployeePassword(e4, '12345'); /* у администратора пароль — 12345 */
   emps = [e1, e2, e3, e4];
   /* справочник проектов (задач) — названия совпадают с демо-записями ниже */
   projects = [
@@ -307,6 +376,21 @@ function validateEntryPayload(body) {
   return { value: { date, task, hours: Math.round(hours * 100) / 100, comment } };
 }
 
+/* Лимит: суммарная длительность задач за день для одного человека — 24 часа.
+   При создании (и корректировке) записи проверяем оставшееся время:
+   сколько часов ещё можно добавить на эту дату. */
+const MAX_HOURS_PER_DAY = 24;
+function hoursOnDate(employeeId, date, excludeId) {
+  return db.entries
+    .filter(e => e.employeeId === employeeId && e.date === date && e.id !== excludeId)
+    .reduce((a, e) => a + (Number(e.hours) || 0), 0);
+}
+function overDayLimitMsg(used, date) {
+  const r2 = x => Math.round(x * 100) / 100;
+  const remain = Math.max(r2(MAX_HOURS_PER_DAY - used), 0);
+  return `Суммарная длительность задач за день для одного человека — не более ${MAX_HOURS_PER_DAY} часов: на ${date} уже учтено ${r2(used)} ч, осталось ${remain} ч`;
+}
+
 function sortedEntries() {
   return [...db.entries].sort((a, b) => b.date.localeCompare(a.date) || b.updatedAt - a.updatedAt);
 }
@@ -335,6 +419,10 @@ const server = http.createServer(async (req, res) => {
     /* ---- публичные: аватарки, список для экрана входа и сам вход ---- */
     if (m === 'GET' && p === '/api/avatars')
       return json(res, 200, { avatars: listAvatars() });
+
+    /* настройки приложения (data/setup.json) — публично: версия видна и на экране входа */
+    if (m === 'GET' && p === '/api/setup')
+      return json(res, 200, setup);
 
     if (m === 'GET' && p === '/api/login/employees')
       return json(res, 200, emps.map(e => ({
@@ -534,6 +622,10 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const v = validateEntryPayload(body);
       if (v.error) return json(res, 400, { error: v.error });
+      /* Архив: добавление записи с архивной датой (раньше текущей на archive_day и более дней)
+         — только для администратора */
+      if (!isAdmin && isArchivedDate(v.value.date))
+        return json(res, 400, { error: `Нельзя добавить запись с архивной датой (${v.value.date}: на ${archiveDays()} и более дней раньше текущей) — так может сделать только администратор` });
       let target;
       if (isAdmin) {
         target = emps.find(e => e.id === body.employeeId);
@@ -544,6 +636,10 @@ const server = http.createServer(async (req, res) => {
           return json(res, 403, { error: 'Исполнитель может вносить записи только за себя' });
         target = actor;
       }
+      /* Лимит 24 часа/день/человек: проверяем оставшееся время на дату */
+      const used = hoursOnDate(target.id, v.value.date);
+      if (used + v.value.hours > MAX_HOURS_PER_DAY + 1e-9)
+        return json(res, 400, { error: overDayLimitMsg(used, v.value.date) });
       const now = Date.now();
       const entry = {
         id: uid(), employeeId: target.id, employeeName: target.name,
@@ -561,10 +657,17 @@ const server = http.createServer(async (req, res) => {
       /* исполнитель трогает только собственные записи */
       if (!isAdmin && entry.employeeId !== actor.id)
         return json(res, 403, { error: 'Можно изменять только собственные записи' });
+      /* Архив: запись с датой, на archive_day и более дней раньше текущей даты,
+         — редактировать и удалять может только администратор */
+      if (!isAdmin && isArchivedDate(entry.date))
+        return json(res, 403, { error: `Запись в архиве (дата ${entry.date}: на ${archiveDays()} и более дней раньше текущей) — редактировать и удалять может только администратор` });
       if (m === 'PUT') {
         const body = await readBody(req);
         const v = validateEntryPayload(body);
         if (v.error) return json(res, 400, { error: v.error });
+        /* Архив: перенос записи на архивную дату — только для администратора */
+        if (!isAdmin && isArchivedDate(v.value.date))
+          return json(res, 400, { error: `Нельзя перенести запись на архивную дату (${v.value.date}: на ${archiveDays()} и более дней раньше текущей) — так может сделать только администратор` });
         if (isAdmin) {
           const emp = emps.find(e => e.id === body.employeeId);
           if (emp) { entry.employeeId = emp.id; entry.employeeName = emp.name; }
@@ -572,6 +675,10 @@ const server = http.createServer(async (req, res) => {
           entry.employeeId = actor.id;
           entry.employeeName = actor.name;
         }
+        /* Лимит 24 часа/день/человек: свои текущие часы записи не входят в учтённые */
+        const used = hoursOnDate(entry.employeeId, v.value.date, entry.id);
+        if (used + v.value.hours > MAX_HOURS_PER_DAY + 1e-9)
+          return json(res, 400, { error: overDayLimitMsg(used, v.value.date) });
         entry.date = v.value.date;
         entry.task = v.value.task;
         entry.hours = v.value.hours;
@@ -585,6 +692,28 @@ const server = http.createServer(async (req, res) => {
         save();
         return json(res, 200, { ok: true });
       }
+    }
+
+    /* Печать: таблица «Задачи» за выбранную неделю → temporary/raport.csv.
+       Администратор экспортирует все записи недели, исполнитель — только свои (как в таблице). */
+    if (m === 'POST' && p === '/api/print') {
+      const body = await readBody(req);
+      let offset = Number(body && body.weekOffset);
+      if (!Number.isInteger(offset) || offset > 0) offset = 0;
+      const wb = weekBoundsISO(offset);
+      const pool = isAdmin ? db.entries : db.entries.filter(e => e.employeeId === actor.id);
+      const rows = pool
+        .filter(e => e.date >= wb.from && e.date <= wb.to)
+        .sort((a, b) => a.date.localeCompare(b.date) || b.updatedAt - a.updatedAt);
+      const field = v => {
+        const s = String(v == null ? '' : v);
+        return /[;\n\r"]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const lines = ['Дата;Сотрудник;Задача;Часы;Комментарий'];
+      for (const e of rows) lines.push([e.date, e.employeeName, e.task, e.hours, e.comment || ''].map(field).join(';'));
+      fs.mkdirSync(TEMP_DIR, { recursive: true });
+      fs.writeFileSync(path.join(TEMP_DIR, 'raport.csv'), '\uFEFF' + lines.join('\r\n') + '\r\n', 'utf8');
+      return json(res, 200, { ok: true, file: 'temporary/raport.csv', rows: rows.length, from: wb.from, to: wb.to });
     }
 
     /* ---- сводка ---- */
@@ -630,6 +759,8 @@ const server = http.createServer(async (req, res) => {
         return fs.createReadStream(full).pipe(res);
       }
       if (p.startsWith('/api/')) return json(res, 404, { error: 'не найдено: ' + p });
+      /* файлы проекта (plotly.js и т.п.) — без них честный 404, а не SPA-фолбэк с HTML */
+      if (p.startsWith('/vendor/')) return json(res, 404, { error: 'не найдено: ' + p });
       /* SPA-фолбэк: любой неизвестный путь отдаёт само приложение */
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return fs.createReadStream(INDEX_FILE).pipe(res);
@@ -641,10 +772,25 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* разовая миграция: журнал раньше хранился в stufftime.json — переносим в database.json */
+if (!fs.existsSync(DATA_FILE) && fs.existsSync(LEGACY_DATA_FILE)) {
+  try {
+    fs.renameSync(LEGACY_DATA_FILE, DATA_FILE);
+    console.log('[db] stufftime.json переименован в database.json');
+  } catch (e) {
+    try { fs.copyFileSync(LEGACY_DATA_FILE, DATA_FILE); console.log('[db] stufftime.json скопирован в database.json'); }
+    catch (e2) { console.warn('[db] не удалось перенести журнал из stufftime.json:', e2.message); }
+  }
+}
 load();
+loadSetup();
+if (!fs.existsSync(SETUP_FILE)) {
+  flushSetup();
+  console.log('[setup] файла настроек не было — создан data/setup.json (version: ' + setup.version + ', archive_day: ' + setup.archive_day + ')');
+}
 if (!fs.existsSync(DATA_FILE) && !fs.existsSync(EMPS_FILE)) {
   seed();
-  console.log('[db] созданы демо-данные (пароль у всех: 1234; администратор: Иванов Сергей)');
+  console.log('[db] созданы демо-данные (пароль: у всех 1234, у Енота 12345; администратор: Енот)');
 } else if (!fs.existsSync(DATA_FILE)) {
   flush();
   console.log('[db] журнал отсутствовал — создан пустой, справочник сохранился');
@@ -652,6 +798,27 @@ if (!fs.existsSync(DATA_FILE) && !fs.existsSync(EMPS_FILE)) {
 if (!fs.existsSync(PROJECTS_FILE)) {
   flushProjects();
   console.log('[db] проекты отсутствовали — создан пустой файл data/projects.json (справочник задач)');
+}
+
+/* plotly.js (страница «Отчёты») — библиотека лежит файлом в самом проекте
+   (public/vendor/plotly.min.js), без npm и без CDN в работе. Если файла нет
+   (например, проект свежескопирован), сервер скачает его при первом запуске. */
+async function ensurePlotly() {
+  const { PLOTLY_FILE: f, ensurePlotly: fetchLib } = require(path.join(__dirname, 'tools', 'plotly-lib.js'));
+  try {
+    if (fs.existsSync(f) && fs.statSync(f).size >= 200 * 1024) {
+      console.log('  plotly:     в проекте — ' + f);
+      return;
+    }
+  } catch { /* файла нет — попробуем скачать */ }
+  console.log('  plotly:     не найден — скачиваю (разовое действие, нужен интернет)…');
+  const r = await fetchLib();
+  if (r.ok) console.log('  plotly:     готово: ' + r.file + ' (' + Math.round(r.bytes / 1024) + ' KB)');
+  else {
+    console.warn('  plotly:     скачивание не удалось: ' + r.error);
+    console.warn('             страница «Отчёты» не будет работать, пока файл не появится:');
+    console.warn('             node tools/fetch-plotly.js');
+  }
 }
 
 server.on('error', err => {
@@ -665,14 +832,15 @@ server.on('error', err => {
   throw err;
 });
 
-server.listen(PORT, () => {
+ensurePlotly().then(() => server.listen(PORT, () => {
   console.log('');
-  console.log('  🗒  STUFFTIME — журнал учёта рабочего времени');
+  console.log('  🗒  Garbege stUff — журнал учёта рабочего времени');
   console.log(`  локально:   http://localhost:${PORT}`);
   console.log(`  по сети:    http://<IP-этого-компьютера>:${PORT}`);
   console.log('  журнал:     ' + DATA_FILE);
+  console.log('  настройки:  ' + SETUP_FILE + ' (version: ' + setup.version + ', archive_day: ' + setup.archive_day + ')');
   console.log('  справочник: ' + EMPS_FILE);
   console.log('  проекты:    ' + PROJECTS_FILE);
   console.log('  аватарки:   ' + AVATARS_DIR);
   console.log('');
-});
+}));

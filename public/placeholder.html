@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Функционал в разработке — Garbege stUff</title>
+<link rel="icon" href="logo.png">
+<script>
+/* применяем сохранённую тему до первой отрисовки — чтобы интерфейс не «мигал» при загрузке */
+(function(){try{var t=localStorage.getItem('stufftime_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="paper-grid" aria-hidden="true"></div>
+
+<main class="placeholder-page">
+  <div class="panel placeholder-card">
+    <img class="placeholder-logo" src="logo.png" alt="Логотип Garbege stUff">
+    <div class="dev-banner" role="status">🚧 Функционал в разработке</div>
+    <p class="placeholder-note">Раздел находится в разработке — функциональность будет добавлена в следующих версиях Garbege stUff.</p>
+  </div>
+</main>
+
+</body>
+</html>
