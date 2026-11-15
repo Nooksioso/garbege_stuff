@@ -382,7 +382,7 @@ function renderProjects() {
 function rowHTML(v, editable) {
   if (editable) {
     return `<tr class="row editing d${dateColor(v.date)}" data-id="${v.id || 'new'}">
-      <td><input type="date" data-f="date" value="${esc(v.date)}"></td>
+      <td><input type="date" data-f="date" value="${esc(v.date)}" max="${todayISO()}" title="Дата не может быть позже текущей"></td>
       <td><select data-f="employeeId" ${isAdmin() ? '' : 'disabled'} title="${isAdmin() ? '' : 'исполнитель вносит запись только за себя'}">${empOptions(v.employeeId)}</select></td>
       <td>
         <div class="task-picker">
@@ -585,6 +585,9 @@ async function saveRow(tr, btn) {
     comment: g('comment').value.trim(),
   };
   if (!v.date) return toast('Выберите дату из календаря', 'err');
+  /* Будущее: запись с датой позже текущей добавить нельзя — для всех пользователей */
+  if (v.date > todayISO())
+    return toast(`Нельзя добавить запись с датой позже текущей (${fmtDate(v.date)}) — записи ведутся только за сегодня и прошедшие даты`, 'err');
   if (!v.employeeId) return toast('Выберите сотрудника из справочника', 'err');
   if (!v.task) return toast('Выберите задачу из справочника «Проекты»', 'err');
   if (!projectByName(v.task)) return toast('Задачу можно выбрать только из справочника «Проекты» — ручной ввод отключён', 'err');

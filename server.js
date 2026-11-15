@@ -135,15 +135,15 @@ function archiveDays() {
   const n = Number(setup.archive_day);
   return (Number.isFinite(n) && n >= 0) ? Math.floor(n) : 8;
 }
-let setup = { version: '0.4', archive_day: 8 };
+let setup = { version: '0.5', archive_day: 8 };
 function loadSetup() {
   try {
     if (fs.existsSync(SETUP_FILE)) {
       const raw = JSON.parse(fs.readFileSync(SETUP_FILE, 'utf8'));
-      if (raw && typeof raw === 'object') setup = { version: '0.4', archive_day: 8, ...raw };
+      if (raw && typeof raw === 'object') setup = { version: '0.5', archive_day: 8, ...raw };
     }
   } catch (e) { console.warn('[setup] чтение настроек пропущено:', e.message); }
-  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.4';
+  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.5';
   setup.archive_day = archiveDays();
 }
 
@@ -151,6 +151,9 @@ function loadSetup() {
    — редактировать и удалять её может только администратор */
 function archiveCutoffISO() { return isoLocal(-archiveDays()); }
 function isArchivedDate(date) { return String(date || '') <= archiveCutoffISO(); }
+/* Будущее: запись с датой позже текущей добавлять нельзя —
+   для всех пользователей, включая администратора */
+function isFutureDate(date) { return String(date || '') > isoLocal(0); }
 
 function load() {
   try {
@@ -622,6 +625,9 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const v = validateEntryPayload(body);
       if (v.error) return json(res, 400, { error: v.error });
+      /* Будущее: запись с датой позже текущей добавлять нельзя — для всех пользователей */
+      if (isFutureDate(v.value.date))
+        return json(res, 400, { error: `Нельзя добавить запись с датой позже текущей (${v.value.date}) — записи ведутся только за сегодня и прошедшие даты` });
       /* Архив: добавление записи с архивной датой (раньше текущей на archive_day и более дней)
          — только для администратора */
       if (!isAdmin && isArchivedDate(v.value.date))
@@ -665,6 +671,9 @@ const server = http.createServer(async (req, res) => {
         const body = await readBody(req);
         const v = validateEntryPayload(body);
         if (v.error) return json(res, 400, { error: v.error });
+        /* Будущее: перенос записи на дату позже текущей — для всех пользователей */
+        if (isFutureDate(v.value.date))
+          return json(res, 400, { error: `Нельзя перенести запись на дату позже текущей (${v.value.date}) — записи ведутся только за сегодня и прошедшие даты` });
         /* Архив: перенос записи на архивную дату — только для администратора */
         if (!isAdmin && isArchivedDate(v.value.date))
           return json(res, 400, { error: `Нельзя перенести запись на архивную дату (${v.value.date}: на ${archiveDays()} и более дней раньше текущей) — так может сделать только администратор` });
