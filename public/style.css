@@ -306,6 +306,13 @@ tr.d4 td:first-child{border-left:3px solid var(--row-edge-4)}
 tr.d5 td:first-child{border-left:3px solid var(--row-edge-5)}
 tr.editing td:first-child{border-left:3px solid var(--mark)}
 
+/* группировка строк по сотрудникам (когда в таблице несколько сотрудников):
+   строка-заголовок группы на всю ширину таблицы */
+.ledger tbody tr.row-emp-head td{background:var(--panel-soft);padding:8px;border-bottom:1px solid var(--line);border-top:2px solid var(--line-strong)}
+.ledger tbody tr.row-emp-head:hover{background:var(--panel-soft)}
+.emp-group-name{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--pine)}
+.emp-group-count{margin-left:10px;font-size:11px;color:var(--ink-soft)}
+
 /* поля редактирования внутри таблицы */
 .ledger td input,.ledger td select{width:100%;font:inherit;font-size:13px;padding:7px 8px;border:1.5px solid var(--line);border-radius:7px;background:var(--field);color:var(--ink)}
 .ledger td input:focus,.ledger td select:focus{outline:none;border-color:var(--pine);box-shadow:0 0 0 3px rgba(46,92,68,.15)}

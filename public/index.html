@@ -386,7 +386,7 @@ function rowHTML(v, editable) {
       <td><select data-f="employeeId" ${isAdmin() ? '' : 'disabled'} title="${isAdmin() ? '' : 'исполнитель вносит запись только за себя'}">${empOptions(v.employeeId)}</select></td>
       <td>
         <div class="task-picker">
-          <input type="text" data-f="task" value="${esc(v.task)}" placeholder="выберите проект из справочника…" autocomplete="off" maxlength="300"
+          <input type="text" data-f="task" value="${esc(v.task)}" data-sel="${projectByName(v.task) ? esc(v.task) : ''}" placeholder="выберите проект из справочника…" autocomplete="off" maxlength="300"
                  title="Задача выбирается только из справочника «Проекты» — начните вводить для поиска">
           <button type="button" class="task-caret" tabindex="-1" aria-label="выбрать проект из справочника «Проекты»">▾</button>
           <div class="task-drop" hidden>
@@ -452,12 +452,30 @@ function renderRows() {
   });
   let html = '';
   if (draft) html += rowHTML(draft, true);
-  for (const e of list) html += rowHTML(e, editingId === e.id);
+  /* в таблице несколько сотрудников — группируем строки по Сотрудникам:
+     группы — по именам (алфавит), внутри группы — по дате (сначала новые) */
+  const empKey = e => String(e.employeeName || '').trim().toLowerCase() || '—';
+  const grouped = new Set(list.map(empKey)).size > 1;
+  if (grouped) {
+    const groups = new Map();
+    for (const e of list) {
+      const k = empKey(e);
+      if (!groups.has(k)) groups.set(k, { name: e.employeeName || '—', rows: [] });
+      groups.get(k).rows.push(e);
+    }
+    for (const g of [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'ru'))) {
+      html += `<tr class="row-emp-head"><td colspan="6"><span class="emp-group-name">${esc(g.name)}</span><span class="emp-group-count">· ${g.rows.length} ${plural(g.rows.length, 'запись', 'записи', 'записей')}</span></td></tr>`;
+      for (const e of [...g.rows].sort((a, b) => b.date.localeCompare(a.date) || (b.updatedAt || 0) - (a.updatedAt || 0)))
+        html += rowHTML(e, editingId === e.id);
+    }
+  } else {
+    for (const e of list) html += rowHTML(e, editingId === e.id);
+  }
   $('#rows').innerHTML = html ||
     `<tr><td colspan="6"><div class="empty">${filters.q || filters.emp
       ? 'По заданному фильтру ничего не найдено.'
       : `Записей за неделю ${fmtDate(wb.from)} — ${fmtDate(wb.to)} пока нет.`} Нажмите «+ Добавить строку» — новая запись попадёт в журнал.</div></td></tr>`;
-  $('#rowsInfo').textContent = `неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · показано: ${list.length} из ${inWeek.length}${draft ? ' + новая строка' : ''} · одинаковый цвет строк — одна дата · задача выбирается из справочника «Проекты»`;
+  $('#rowsInfo').textContent = `неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · показано: ${list.length} из ${inWeek.length}${draft ? ' + новая строка' : ''}${grouped ? ' · строки сгруппированы по сотрудникам' : ''} · одинаковый цвет строк — одна дата · задача выбирается из справочника «Проекты»`;
 }
 
 /* ---------- рендер справочника ---------- */
@@ -565,8 +583,9 @@ $('#addBtn').addEventListener('click', () => {
   if (!employees.length) { toast('Нет доступного сотрудника для записи', 'err'); return; }
   if (!projects.length && !draft) toast('Задача выбирается только из справочника «Проекты» — сначала внесите проект', 'err');
   if (draft) { const t = document.querySelector('.row.editing [data-f=task]'); if (t) t.focus(); return; }
-  /* исполнитель фиксирует работу только за себя; администратор — за кого угодно */
-  const empId = isAdmin() ? employees[0].id : (me ? me.id : employees[0].id);
+  /* новая строка по умолчанию заполняется текущей учётной записью (под которой выполнен вход);
+     администратор при необходимости может выбрать другого сотрудника из списка */
+  const empId = (me && employees.some(x => x.id === me.id)) ? me.id : (employees[0] ? employees[0].id : '');
   /* дата новой записи: текущая неделя — сегодня, прошедшая — понедельник этой недели */
   const draftDate = weekOffset === 0 ? todayISO() : weekBounds(weekOffset).from;
   draft = { id: null, date: draftDate, employeeId: empId, task: '', hours: 8, comment: '' };
@@ -621,7 +640,12 @@ $('#rows').addEventListener('click', async ev => {
   const btn = ev.target.closest('button'); if (!btn) return;
   const tr = btn.closest('tr'); const op = btn.dataset.op;
 
-  if (op === 'save') { btn.disabled = true; await saveRow(tr, btn); return; }
+  if (op === 'save') {
+    btn.disabled = true; /* блокируем повторный клик на время проверки и запроса */
+    try { await saveRow(tr, btn); }
+    finally { if (btn.isConnected) btn.disabled = false; /* при ошибке валидации кнопка снова активна — можно исправить поля и сохранить */ }
+    return;
+  }
   if (op === 'discard') { draft = null; renderRows(); return; }
   if (op === 'cancel') { editingId = null; renderRows(); return; }
   if (op === 'edit') {
@@ -693,7 +717,11 @@ function renderTaskDrop(input) {
   const drop = picker.querySelector('.task-drop');
   const head = drop.querySelector('.task-drop-head');
   const listEl = drop.querySelector('.task-drop-list');
-  const q = input.value.trim().toLowerCase();
+  /* если из списка уже выбран вариант — при повторном вызове списка фильтр очищается
+     и показываются все проекты; как только пользователь начнёт вводить текст — снова поиск */
+  const selName = String(input.dataset.sel || '').trim().toLowerCase();
+  const typed = input.value.trim().toLowerCase();
+  const q = (selName && typed === selName) ? '' : typed;
   const items = [...projects]
     .sort((a, b) => (Number(a.num) || 0) - (Number(b.num) || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'ru'))
     .filter(p => !q || String(p.name).toLowerCase().includes(q) || String(p.num).includes(q));

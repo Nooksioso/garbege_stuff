@@ -135,15 +135,15 @@ function archiveDays() {
   const n = Number(setup.archive_day);
   return (Number.isFinite(n) && n >= 0) ? Math.floor(n) : 8;
 }
-let setup = { version: '0.5', archive_day: 8 };
+let setup = { version: '0.7', archive_day: 8 };
 function loadSetup() {
   try {
     if (fs.existsSync(SETUP_FILE)) {
       const raw = JSON.parse(fs.readFileSync(SETUP_FILE, 'utf8'));
-      if (raw && typeof raw === 'object') setup = { version: '0.5', archive_day: 8, ...raw };
+      if (raw && typeof raw === 'object') setup = { version: '0.7', archive_day: 8, ...raw };
     }
   } catch (e) { console.warn('[setup] чтение настроек пропущено:', e.message); }
-  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.5';
+  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.7';
   setup.archive_day = archiveDays();
 }
 
