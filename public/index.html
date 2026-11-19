@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Rubik:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
 <script>
-/* применяем сохранённую тему до первой отрисовки — чтобы интерфейс не «мигал» при загрузке */
-(function(){try{var t=localStorage.getItem('stufftime_theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+/* применяем сохранённую тему до первой отрисовки — чтобы интерфейс не «мигал» при загрузке;
+   и состояние боковой панели (свёрнуто/развёрнуто) — чтобы панель не «прыгала» при входе */
+(function(){try{var t=localStorage.getItem('stufftime_theme');if(t)document.documentElement.setAttribute('data-theme',t);var s=localStorage.getItem('stufftime_sidebar');if(s==='collapsed')document.documentElement.classList.add('sb-collapsed');}catch(e){}})();
 </script>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -63,6 +64,7 @@
         <div class="cover-kicker">Производственный журнал · рег. № <span data-regver>…</span></div>
         <h1>ЖУРНАЛ</h1>
         <div class="cover-sub">Garbege stUff · задачи сотрудников по датам и часам</div>
+        <div class="chip net-chip" role="status"><span class="dot" id="netDot"></span><span id="netText">подключение…</span></div>
       </div>
     </div>
     <div class="stamp" title="система в работе">
@@ -73,8 +75,7 @@
     <div class="cover-right">
       <div class="clock" id="clock">--:--:--</div>
       <div class="clock-date" id="clockDate">—</div>
-      <div class="chip" role="status"><span class="dot" id="netDot"></span><span id="netText">подключение…</span></div>
-      <div class="userbar"><img id="meAvatar" class="me-avatar" alt="" hidden><span class="me">вход: <b id="meName">—</b></span><button class="btn-logout" id="logoutBtn" type="button">Выйти</button></div>
+      <div class="userbar"><span class="me">вход: <b id="meName">—</b></span><button class="btn-logout" id="logoutBtn" type="button">Выйти</button></div>
       <div class="theme-dd">
         <button class="theme-dd-btn" type="button" title="Тема интерфейса: светлая / серая / тёмная" aria-haspopup="listbox" aria-expanded="false">
           <span class="theme-dd-label">Тема:</span>
@@ -95,10 +96,18 @@
 
 <div class="app-shell">
   <nav class="sidebar" id="sidebar" hidden aria-label="Разделы (администратор)">
-    <div class="sidebar-brand">Garbege stUff</div>
+    <div class="sidebar-head">
+      <div class="sidebar-brand">Garbege stUff</div>
+      <button class="side-toggle" id="sbToggle" type="button" aria-expanded="true" title="Свернуть меню"><span class="sb-toggle-ico" aria-hidden="true">«</span></button>
+    </div>
     <button class="side-btn active" type="button" data-page="tasks"><span class="side-ico" aria-hidden="true">🗒</span><span>Задачи</span></button>
-    <button class="side-btn" type="button" data-page="employees"><span class="side-ico" aria-hidden="true">👥</span><span>Сотрудники</span></button>
-    <button class="side-btn" type="button" data-page="projects"><span class="side-ico" aria-hidden="true">📁</span><span>Проекты</span></button>
+    <div class="side-group" role="group" aria-label="Справочники">
+      <div class="side-group-title">Справочники</div>
+      <button class="side-btn" type="button" data-page="employees"><span class="side-ico" aria-hidden="true">👥</span><span>Сотрудники</span></button>
+      <button class="side-btn" type="button" data-page="projects"><span class="side-ico" aria-hidden="true">📁</span><span>Проекты</span></button>
+      <button class="side-btn side-stub" type="button" data-page="positions" title="Заготовка: справочник «Должности» (функционал в разработке)"><span class="side-ico" aria-hidden="true">💼</span><span>Должности</span></button>
+      <button class="side-btn side-stub" type="button" data-page="clients" title="Заготовка: справочник «Заказчики» (функционал в разработке)"><span class="side-ico" aria-hidden="true">🤝</span><span>Заказчики</span></button>
+    </div>
     <button class="side-btn" type="button" data-page="reports"><span class="side-ico" aria-hidden="true">📊</span><span>Отчёты</span></button>
     <button class="side-btn" type="button" data-page="settings"><span class="side-ico" aria-hidden="true">⚙️</span><span>Настройка</span></button>
     <div class="sidebar-foot">
@@ -109,7 +118,7 @@
 
   <main>
     <section id="pageTasks" class="page">
-      <section class="stamps" id="stamps" aria-label="Сводка"></section>
+      <section class="stamps" id="stamps" aria-label="Сводка за выбранную неделю (текущий пользователь)"></section>
 
       <section class="panel" aria-label="Задачи">
         <div class="panel-head">
@@ -142,7 +151,7 @@
         <div class="ledger-foot">
           <span id="rowsInfo"></span>
           <div class="foot-btns">
-            <button class="btn btn-print" id="printBtn" type="button" title="Сохранить таблицу записей выбранной недели в temporary/raport.csv">🖨️ Печать</button>
+            <button class="btn btn-print" id="printBtn" type="button" title="Таблица записей выбранной недели: скачать rapport.csv на компьютер (файл также сохраняется в temporary/raport.csv)">🖨️ Печать</button>
             <button class="btn btn-add" id="addBtn">+ Добавить строку</button>
           </div>
         </div>
@@ -200,6 +209,30 @@
       </section>
     </section>
 
+    <section id="pagePositions" class="page" hidden>
+      <section class="panel" aria-label="Справочник «Должности» — заготовка">
+        <div class="panel-head">
+          <h2>Справочник «Должности»</h2>
+          <span class="panel-note">заготовка нового справочника: выводится файл заглушки <code>public/placeholder.html</code></span>
+        </div>
+        <div class="settings-frame">
+          <iframe src="placeholder.html" title="Файл заглушки: «Функционал в разработке» (справочник «Должности»)" loading="lazy"></iframe>
+        </div>
+      </section>
+    </section>
+
+    <section id="pageClients" class="page" hidden>
+      <section class="panel" aria-label="Справочник «Заказчики» — заготовка">
+        <div class="panel-head">
+          <h2>Справочник «Заказчики»</h2>
+          <span class="panel-note">заготовка нового справочника: выводится файл заглушки <code>public/placeholder.html</code></span>
+        </div>
+        <div class="settings-frame">
+          <iframe src="placeholder.html" title="Файл заглушки: «Функционал в разработке» (справочник «Заказчики»)" loading="lazy"></iframe>
+        </div>
+      </section>
+    </section>
+
     <section id="pageReports" class="page" hidden>
       <section class="panel" aria-label="Отчёты">
         <div class="panel-head">
@@ -246,7 +279,7 @@
         <li><span class="m post">POST</span> /api/entries — новая запись (архивная дата — только администратор)</li>
         <li><span class="m put">PUT</span> /api/entries/:id — корректировка (архивные записи — только администратор)</li>
         <li><span class="m del">DEL</span> /api/entries/:id — удалить запись (архивные — только администратор)</li>
-        <li><span class="m post">POST</span> /api/print — печать: неделя → temporary/raport.csv</li>
+        <li><span class="m post">POST</span> /api/print — печать: неделя → temporary/raport.csv + скачать файл на компьютер</li>
         <li><span class="m get">GET</span> /api/stats — сводка · /api/health — статус</li>
         <li><span class="m get">GET</span> /api/setup — настройки приложения (data/setup.json, версия)</li>
       </ul>
@@ -308,7 +341,7 @@ async function api(path, opts = {}) {
   return data;
 }
 
-let employees = [], entries = [], stats = null, projects = [];
+let employees = [], entries = [], projects = [];
 let me = null;                 // текущий пользователь (после входа)
 const isAdmin = () => !!(me && me.accessRole === 'admin');
 let archiveDay = 8;            // archive_day из data/setup.json — архив записей
@@ -404,14 +437,13 @@ function rowHTML(v, editable) {
       </td>
     </tr>`;
   }
-  const role = (employees.find(e => e.id === v.employeeId) || {}).role || '';
   /* Архив: запись с датой, на archive_day и более дней раньше текущей,
      — для всех, кроме администратора, редактирование (✎) и удаление (✕) недоступны */
   const locked = !isAdmin() && isArchived(v.date);
   const lockTitle = `Архив: дата ${fmtDate(v.date)} — на ${archiveDay} и более дней раньше текущей. Редактировать и удалять может только администратор`;
   return `<tr class="row${locked ? ' row-arch' : ''} d${dateColor(v.date)}" data-id="${v.id}">
     <td class="c-date">${fmtDate(v.date)}${locked ? ` <span class="arch-lock" title="${lockTitle}">🔒</span>` : ''}</td>
-    <td>${esc(v.employeeName)}${role ? `<span class="emp-role-tag">${esc(role)}</span>` : ''}</td>
+    <td>${esc(v.employeeName)}</td>
     <td>${esc(v.task)}</td>
     <td><span class="hours">${fmtH(v.hours)} ч</span></td>
     <td class="com">${esc(v.comment) || '—'}</td>
@@ -475,7 +507,7 @@ function renderRows() {
     `<tr><td colspan="6"><div class="empty">${filters.q || filters.emp
       ? 'По заданному фильтру ничего не найдено.'
       : `Записей за неделю ${fmtDate(wb.from)} — ${fmtDate(wb.to)} пока нет.`} Нажмите «+ Добавить строку» — новая запись попадёт в журнал.</div></td></tr>`;
-  $('#rowsInfo').textContent = `неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · показано: ${list.length} из ${inWeek.length}${draft ? ' + новая строка' : ''}${grouped ? ' · строки сгруппированы по сотрудникам' : ''} · одинаковый цвет строк — одна дата · задача выбирается из справочника «Проекты»`;
+  $('#rowsInfo').textContent = `неделя ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · показано: ${list.length} из ${inWeek.length}${draft ? ' + новая строка' : ''}${grouped ? ' · строки сгруппированы по сотрудникам' : ''} · одинаковый цвет карточки и строк — одна дата · задача выбирается из справочника «Проекты»`;
 }
 
 /* ---------- рендер справочника ---------- */
@@ -543,21 +575,37 @@ function setAvatarPrev(selEl) {
 }
 $('#eAvatar').addEventListener('change', e => setAvatarPrev(e.target));
 
-/* ---------- сводка ---------- */
-function renderStats() {
-  if (!stats) return;
-  $('#stamps').innerHTML = `
-    <div class="stamp-card"><small>записей в журнале</small><b>${stats.entries}</b></div>
-    <div class="stamp-card"><small>часов сегодня</small><b>${fmtH(stats.hoursToday)}</b></div>
-    <div class="stamp-card"><small>часов в этом месяце</small><b>${fmtH(stats.hoursMonth)}</b></div>
-    <div class="stamp-card"><small>сотрудников в справочнике</small><b>${stats.employees}</b></div>`;
+/* ---------- сводка (карточки сверху): за выбранную неделю, для текущего пользователя —
+   сколько часов потрачено на задачи в каждый день недели (Пн — Вс) и сколько суммарно за неделю ---------- */
+function renderWeekCards() {
+  const wb = weekBounds(weekOffset);
+  const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const isods = [], hours = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(wb.from + 'T00:00:00'); d.setDate(d.getDate() + i);
+    const iso = isoLocalDate(d);
+    isods.push(iso);
+    hours.push(Math.round(entries
+      .filter(e => me && e.employeeId === me.id && e.date === iso)
+      .reduce((a, e) => a + (Number(e.hours) || 0), 0) * 100) / 100);
+  }
+  const total = Math.round(hours.reduce((a, b) => a + b, 0) * 100) / 100;
+  let html = `<div class="stamps-head">Сводка за неделю ${fmtDate(wb.from)} — ${fmtDate(wb.to)}${weekOffset === 0 ? ' (текущая)' : ''} · <b>${me ? esc(me.name) : '—'}</b> (вход)</div>`;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(wb.from + 'T00:00:00'); d.setDate(d.getDate() + i);
+    const dm = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    /* цвет карточки дня — тот же, что у строк таблицы за эту дату (d0–d5: цвет зависит от даты) */
+    html += `<div class="stamp-card d${dateColor(isods[i])}${hours[i] > 0 ? '' : ' day-zero'}"><small>${dayNames[i]} · ${dm}</small><b>${fmtH(hours[i])} ч</b></div>`;
+  }
+  html += `<div class="stamp-card week-total"><small>всего за неделю</small><b>${fmtH(total)} ч</b></div>`;
+  $('#stamps').innerHTML = html;
 }
 
-function renderAll() { renderRows(); renderEmps(); renderProjects(); renderStats(); }
+function renderAll() { renderRows(); renderEmps(); renderProjects(); renderWeekCards(); }
 
 async function load() {
-  const [e, en, s, pr] = await Promise.all([api('/api/employees'), api('/api/entries'), api('/api/stats'), api('/api/projects')]);
-  employees = e; entries = en.entries; stats = s; projects = pr.projects || [];
+  const [e, en, pr] = await Promise.all([api('/api/employees'), api('/api/entries'), api('/api/projects')]);
+  employees = e; entries = en.entries; projects = pr.projects || [];
   if (draft && !employees.some(x => x.id === draft.employeeId))
     draft.employeeId = employees[0] ? employees[0].id : '';
   renderAll();
@@ -567,13 +615,26 @@ async function load() {
 }
 
 /* ---------- события: журнал ---------- */
-/* Печать: таблица «Задачи» за выбранную неделю сохраняется сервером в temporary/raport.csv */
+/* Скачивание CSV на компьютер пользователя: BOM (для Excel) + Blob + <a download> */
+function downloadCsv(csvText, filename) {
+  const blob = new Blob(['\uFEFF' + String(csvText || '')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+/* Печать: таблица «Задачи» за выбранную неделю — браузер предлагает скачать raport.csv
+   на компьютер пользователя; файл также сохраняется сервером в temporary/raport.csv */
 $('#printBtn').addEventListener('click', async () => {
   const btn = $('#printBtn');
   btn.disabled = true;
   try {
     const r = await api('/api/print', { method: 'POST', body: { weekOffset } });
-    toast(`Печать: ${r.rows} ${plural(r.rows, 'запись', 'записи', 'записей')} за ${fmtDate(r.from)} — ${fmtDate(r.to)} → temporary/raport.csv`, 'ok');
+    downloadCsv(r.csv, 'raport.csv');
+    toast(`Печать: ${r.rows} ${plural(r.rows, 'запись', 'записи', 'записей')} за ${fmtDate(r.from)} — ${fmtDate(r.to)} → файл raport.csv предложен к скачиванию (на сервере: temporary/raport.csv)`, 'ok');
   } catch (e) {
     toast(e.message, 'err');
   } finally { btn.disabled = false; }
@@ -583,9 +644,11 @@ $('#addBtn').addEventListener('click', () => {
   if (!employees.length) { toast('Нет доступного сотрудника для записи', 'err'); return; }
   if (!projects.length && !draft) toast('Задача выбирается только из справочника «Проекты» — сначала внесите проект', 'err');
   if (draft) { const t = document.querySelector('.row.editing [data-f=task]'); if (t) t.focus(); return; }
-  /* новая строка по умолчанию заполняется текущей учётной записью (под которой выполнен вход);
-     администратор при необходимости может выбрать другого сотрудника из списка */
-  const empId = (me && employees.some(x => x.id === me.id)) ? me.id : (employees[0] ? employees[0].id : '');
+  /* сотрудник в новой строке по умолчанию:
+     обычный пользователь (исполнитель) — всегда он сам (единственный в его списке);
+     администратор — по умолчанию он сам (при необходимости выбирает другого из списка) */
+  const empId = (me && (!isAdmin() || employees.some(x => x.id === me.id))) ? me.id
+    : (employees[0] ? employees[0].id : '');
   /* дата новой записи: текущая неделя — сегодня, прошедшая — понедельник этой недели */
   const draftDate = weekOffset === 0 ? todayISO() : weekBounds(weekOffset).from;
   draft = { id: null, date: draftDate, employeeId: empId, task: '', hours: 8, comment: '' };
@@ -792,17 +855,20 @@ document.addEventListener('click', ev => {
 $('#fText').addEventListener('input', e => { filters.q = e.target.value.trim(); renderRows(); });
 $('#fEmp').addEventListener('change', e => { filters.emp = e.target.value; renderRows(); });
 
-/* навигация по неделям (кнопки над таблицей) */
+/* навигация по неделям (кнопки над таблицей):
+   таблица и верхние карточки сводки пересчитываются за выбранную неделю */
 $('#weekPrevBtn').addEventListener('click', () => {
   weekOffset -= 1;
   draft = null; editingId = null; /* незавершённая новая строка не «перескакивает» между неделями */
   renderRows();
+  renderWeekCards(); /* карточки сверху — сразу за новую неделю */
 });
 $('#weekNextBtn').addEventListener('click', () => {
   if (weekOffset >= 0) return; /* на будущую неделю переходить нельзя — кнопка неактивна */
   weekOffset += 1;
   draft = null; editingId = null;
   renderRows();
+  renderWeekCards(); /* карточки сверху — сразу за новую неделю */
 });
 
 /* ---------- события: справочник ---------- */
@@ -1141,7 +1207,7 @@ function applyRoleUI() {
   if (!adm) setPage('tasks');
 }
 /* ---------- навигация: боковая панель (администратор) ---------- */
-const PAGE_IDS = { tasks: 'pageTasks', employees: 'pageEmployees', projects: 'pageProjects', reports: 'pageReports', settings: 'pageSettings' };
+const PAGE_IDS = { tasks: 'pageTasks', employees: 'pageEmployees', projects: 'pageProjects', positions: 'pagePositions', clients: 'pageClients', reports: 'pageReports', settings: 'pageSettings' };
 const PAGE_KEY = 'stufftime_page';
 let currentPage = 'tasks';
 function setPage(p) {
@@ -1161,15 +1227,37 @@ function savedPage() {
   try { const p = sessionStorage.getItem(PAGE_KEY); return PAGE_IDS[p] ? p : null; } catch { return null; }
 }
 
+/* ---------- боковая панель: сворачивание «вбок» (администратор) ----------
+   Кнопка ««/»» вверху панели: меню сворачивается в узкую колонку иконок,
+   повторное нажатие — разворачивает. Состояние (свёрнуто/развёрнуто)
+   запоминается в localStorage (stufftime_sidebar) и восстанавливается до
+   первой отрисовки (inline-скрипт в <head>), чтобы панель не «прыгала»;
+   на узких экранах меню горизонтальное — свёрнутое состояние не применяется. */
+const SIDEBAR_KEY = 'stufftime_sidebar';
+function sidebarIsCollapsed() { return document.documentElement.classList.contains('sb-collapsed'); }
+function setSidebarCollapsed(collapsed, save) {
+  document.documentElement.classList.toggle('sb-collapsed', collapsed);
+  const b = document.getElementById('sbToggle');
+  if (b) {
+    b.setAttribute('aria-expanded', String(!collapsed));
+    b.title = collapsed ? 'Развернуть меню' : 'Свернуть меню';
+    const ico = b.querySelector('.sb-toggle-ico');
+    if (ico) ico.textContent = collapsed ? '»' : '«';
+  }
+  if (save) { try { localStorage.setItem(SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded'); } catch {} }
+}
+(function initSidebar() {
+  let saved = null;
+  try { saved = localStorage.getItem(SIDEBAR_KEY); } catch {}
+  setSidebarCollapsed(saved === 'collapsed', false); /* синхронизируем кнопку с уже применённым состоянием */
+  const b = document.getElementById('sbToggle');
+  if (b) b.addEventListener('click', () => setSidebarCollapsed(!sidebarIsCollapsed(), true));
+})();
+
 function showApp() {
   $('#loginView').hidden = true;
   $('#appView').hidden = false;
   $('#meName').textContent = me ? (me.name + (me.accessRole === 'admin' ? ' · админ' : '')) : '—';
-  const mimg = $('#meAvatar');
-  if (mimg) {
-    if (me && me.avatar) { mimg.src = 'avatars/' + encodeURIComponent(me.avatar); mimg.hidden = false; }
-    else { mimg.removeAttribute('src'); mimg.hidden = true; }
-  }
   applyRoleUI();
   /* в боковой панели — текущий пользователь */
   const sbn = $('#sbName'), sbr = $('#sbRole'), sba = $('#sbAvatar');

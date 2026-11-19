@@ -135,15 +135,15 @@ function archiveDays() {
   const n = Number(setup.archive_day);
   return (Number.isFinite(n) && n >= 0) ? Math.floor(n) : 8;
 }
-let setup = { version: '0.7', archive_day: 8 };
+let setup = { version: '1.1', archive_day: 8 };
 function loadSetup() {
   try {
     if (fs.existsSync(SETUP_FILE)) {
       const raw = JSON.parse(fs.readFileSync(SETUP_FILE, 'utf8'));
-      if (raw && typeof raw === 'object') setup = { version: '0.7', archive_day: 8, ...raw };
+      if (raw && typeof raw === 'object') setup = { version: '1.1', archive_day: 8, ...raw };
     }
   } catch (e) { console.warn('[setup] чтение настроек пропущено:', e.message); }
-  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '0.7';
+  if (setup.version === undefined || setup.version === null || String(setup.version).trim() === '') setup.version = '1.1';
   setup.archive_day = archiveDays();
 }
 
@@ -720,9 +720,11 @@ const server = http.createServer(async (req, res) => {
       };
       const lines = ['Дата;Сотрудник;Задача;Часы;Комментарий'];
       for (const e of rows) lines.push([e.date, e.employeeName, e.task, e.hours, e.comment || ''].map(field).join(';'));
+      const csv = lines.join('\r\n') + '\r\n';
       fs.mkdirSync(TEMP_DIR, { recursive: true });
-      fs.writeFileSync(path.join(TEMP_DIR, 'raport.csv'), '\uFEFF' + lines.join('\r\n') + '\r\n', 'utf8');
-      return json(res, 200, { ok: true, file: 'temporary/raport.csv', rows: rows.length, from: wb.from, to: wb.to });
+      fs.writeFileSync(path.join(TEMP_DIR, 'raport.csv'), '\uFEFF' + csv, 'utf8');
+      /* csv в ответе — браузер предлагает скачать файл raport.csv на компьютер пользователя */
+      return json(res, 200, { ok: true, file: 'temporary/raport.csv', rows: rows.length, from: wb.from, to: wb.to, csv });
     }
 
     /* ---- сводка ---- */

@@ -216,7 +216,12 @@ main{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:
   background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px;
   box-shadow:0 10px 26px rgba(28,43,34,.07)}
 .sidebar[hidden]{display:none!important}
-.sidebar-brand{font-family:var(--display);font-size:10.5px;letter-spacing:.25em;color:var(--ink-soft);padding:2px 10px 10px;margin-bottom:4px;border-bottom:1px dashed var(--line)}
+/* шапка панели: бренд + кнопка сворачивания меню «вбок» */
+.sidebar-head{display:flex;align-items:center;gap:8px;padding:0 2px 10px;margin-bottom:4px;border-bottom:1px dashed var(--line)}
+.sidebar-brand{font-family:var(--display);font-size:10.5px;letter-spacing:.25em;color:var(--ink-soft);padding:2px 8px 0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-toggle{flex:none;width:30px;height:30px;display:grid;place-items:center;border:1.5px solid var(--line);border-radius:8px;background:var(--panel-soft);color:var(--ink-soft);cursor:pointer;transition:.15s;padding:0;font-size:16px;line-height:1}
+.side-toggle:hover{border-color:var(--pine);color:var(--pine)}
+.side-toggle:focus{outline:none;border-color:var(--mark);box-shadow:0 0 0 3px rgba(46,92,68,.15)}
 .side-btn{font:inherit;font-size:14px;font-weight:500;text-align:left;display:flex;align-items:center;gap:10px;
   padding:10px 12px;border:none;border-radius:10px;background:transparent;color:var(--ink);cursor:pointer;transition:.15s}
 .side-btn .side-ico{flex:none;width:24px;height:24px;display:grid;place-items:center;font-size:14px;line-height:1;
@@ -224,10 +229,32 @@ main{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:
 .side-btn:hover{background:var(--panel-soft)}
 .side-btn.active{background:var(--pine);color:#fff}
 .side-btn.active .side-ico{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.28)}
+/* группа «Справочники» в меню: заголовок + пункты (Сотрудники, Проекты,
+   заготовки «Должности» и «Заказчики» — у иконки пунктирная рамка) */
+.side-group-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft);opacity:.7;padding:9px 12px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-stub .side-ico{border-style:dashed}
+.side-stub{opacity:.82}
+.side-stub:hover,.side-stub.active{opacity:1}
 .sidebar-foot{margin-top:8px;padding:10px 10px 2px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}
 .sb-user{display:flex;align-items:center;gap:7px;min-width:0}
 .sb-user b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sb-role{font-size:11px;color:var(--ink-soft)}
+
+/* сворачивание панели «вбок» (администратор): свёрнутая панель — узкая колонка
+   иконок (тексты пунктов, заголовок, имя и роль пользователя скрываются).
+   Состояние — класс html.sb-collapsed: его ставит inline-скрипт в <head>
+   (localStorage stufftime_sidebar) до первой отрисовки, а переключает
+   кнопка .side-toggle; ширина меняется плавно */
+.sidebar{transition:width .18s ease,padding .18s ease}
+html.sb-collapsed .sidebar{width:76px;padding:12px 9px;gap:8px}
+html.sb-collapsed .sidebar-head{padding-bottom:8px;justify-content:center}
+html.sb-collapsed .sidebar-brand{display:none}
+html.sb-collapsed .side-btn{justify-content:center;padding:10px 8px}
+html.sb-collapsed .side-btn > span:not(.side-ico){display:none}
+html.sb-collapsed .side-group-title{display:none}
+html.sb-collapsed .sidebar-foot{padding:8px 2px 2px;align-items:center}
+html.sb-collapsed .sb-user{justify-content:center}
+html.sb-collapsed .sb-user b,html.sb-collapsed .sb-role{display:none}
 
 /* страница «Сотрудники» — уже таблицы, но не на всю ширину */
 .emp-page{max-width:900px}
@@ -242,19 +269,56 @@ main{position:relative;z-index:1;flex:1;min-width:0;display:flex;flex-direction:
 @media(max-width:900px){
   .app-shell{flex-direction:column}
   .sidebar{position:static;width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px}
+  .sidebar-head{border-bottom:none;padding-bottom:0;margin-bottom:0}
   .sidebar-brand{border-bottom:none;margin-bottom:0;padding:2px 10px;display:flex;align-items:center;flex:none}
   .sidebar-brand::after{content:'';flex:1;border-bottom:1px dashed var(--line);margin-left:10px}
   .side-btn{flex:1;justify-content:center;min-width:150px}
   .sidebar-foot{display:none}
+  /* на узком экране меню горизонтальное — кнопка сворачивания не нужна, а
+     состояние «свёрнуто» (установленное на широком экране) не применяется */
+  .side-toggle{display:none}
+  html.sb-collapsed .sidebar{width:100%;padding:10px}
+  html.sb-collapsed .sidebar-head{display:flex;justify-content:flex-start}
+  html.sb-collapsed .sidebar-brand{display:flex}
+  html.sb-collapsed .side-btn{justify-content:center}
+  html.sb-collapsed .side-btn > span:not(.side-ico){display:inline}
+  html.sb-collapsed .side-group-title{display:block}
+  html.sb-collapsed .sidebar-foot{display:none}
+  html.sb-collapsed .sb-user b,html.sb-collapsed .sb-role{display:block}
 }
 
-/* штампы-счётчики */
-.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
-.stamp-card{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+/* штампы-счётчики: сводка за выбранную неделю — 8 карточек (дни Пн–Вс + всего за неделю).
+   Карточки компактные: 8 × 104px + 7 × 10px ≈ 902px — все 8 карточек помещаются
+   в одну линию даже у администратора с боковой панелью (ширина main ≈ 1076px) */
+.stamps{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px}
+.stamp-card{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden}
 .stamp-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--pine)}
 .stamp-card:nth-child(even)::before{background:var(--mark)}
-.stamp-card small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin-bottom:6px}
-.stamp-card b{font-family:var(--display);font-size:26px;font-weight:400}
+.stamp-card small{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);margin-bottom:5px}
+.stamp-card b{font-family:var(--display);font-size:21px;font-weight:400}
+/* подпись сводки: период недели + текущий пользователь */
+.stamps-head{grid-column:1/-1;font-size:12.5px;color:var(--ink-soft);margin-bottom:2px}
+.stamps-head b{color:var(--ink)}
+/* день без записей — приглушённо */
+.stamp-card.day-zero b{color:var(--ink-soft);opacity:.5}
+/* итоговая карточка недели — акцент */
+.stamp-card.week-total{background:var(--mark-soft);border-color:var(--mark)}
+.stamp-card.week-total::before{background:var(--mark)}
+/* цвет карточки дня — тот же, что у строк таблицы за эту дату:
+   та же палитра d0–d5 (переменные --row-bg-N/--row-edge-N), что и tr.d0–tr.d5.
+   Правила идут после :nth-child — чтобы цвет дня перекрывал «чередование» полос */
+.stamp-card.d0{background:var(--row-bg-0);border-color:var(--row-edge-0)}
+.stamp-card.d1{background:var(--row-bg-1);border-color:var(--row-edge-1)}
+.stamp-card.d2{background:var(--row-bg-2);border-color:var(--row-edge-2)}
+.stamp-card.d3{background:var(--row-bg-3);border-color:var(--row-edge-3)}
+.stamp-card.d4{background:var(--row-bg-4);border-color:var(--row-edge-4)}
+.stamp-card.d5{background:var(--row-bg-5);border-color:var(--row-edge-5)}
+.stamp-card.d0::before{background:var(--row-edge-0)}
+.stamp-card.d1::before{background:var(--row-edge-1)}
+.stamp-card.d2::before{background:var(--row-edge-2)}
+.stamp-card.d3::before{background:var(--row-edge-3)}
+.stamp-card.d4::before{background:var(--row-edge-4)}
+.stamp-card.d5::before{background:var(--row-edge-5)}
 
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:0 10px 26px rgba(28,43,34,.07)}
 .panel h2{font-family:var(--display);font-size:14px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:10px;font-weight:400}
